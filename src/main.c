@@ -11,10 +11,10 @@
 #include "graphic.h"
 
 // Constants
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
-const int LEVEL_WIDTH = 1280;
-const int LEVEL_HEIGHT = 960;
+const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 720;
+const int LEVEL_WIDTH = 1920;
+const int LEVEL_HEIGHT = 1080;
 
 // Quit programme
 void end()
@@ -31,7 +31,7 @@ void end()
 }
 
 
-int main (int argc, char *argv[])
+int main (int argc, char* argv[])
 {
 	// Initialise 
 	if (graphicInit())
@@ -42,9 +42,15 @@ int main (int argc, char *argv[])
 		// Initialise entity list with placeholder values
 		entity *mainEntityList[10];
 		int mainEntityListCount = 0;
-		for (int i = 0; i < 2; ++i)
+		for (int i = 0; i < 10; i++)
 		{
-			mainEntityList[i] = NULL;
+			mainEntityList[i] = malloc(sizeof(entity));
+			mainEntityList[i]->thing = NULL;
+			mainEntityList[i]->form = 0;
+			mainEntityList[i]->x = 0;
+			mainEntityList[i]->y = 0;
+			mainEntityList[i]->initX = 0;
+			mainEntityList[i]->initY = 0;
 		}
 
 		// Load media
@@ -63,15 +69,16 @@ int main (int argc, char *argv[])
 			mainViewport.h = SCREEN_HEIGHT;
 			SDL_RenderSetViewport(renderer, &mainViewport);
 
-			// Set up camerac
-			int *cameraTransform = centreGraphic(SCREEN_WIDTH, SCREEN_HEIGHT);
-			SDL_Rect camera = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
-			free(cameraTransform);
+			// Set up camera
+			//transCoords *cameraTransform = centreGraphic(SCREEN_WIDTH, SCREEN_HEIGHT);
+			SDL_Rect cameraRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+			entity camera = createEntity(&cameraRect, T_CAMERA, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, mainEntityList, 1.0, &mainEntityListCount);
+			//free(cameraTransform);
 
 			// Variables required to be declared before main loop due to memory allocation
-			int* rectTransform = centreGraphic((SCREEN_WIDTH / 6), (SCREEN_HEIGHT / 6));
-			SDL_Rect fillRect = {rectTransform[0], rectTransform[1], rectTransform[2], rectTransform[3]};
-			entity redRect = createEntity(&fillRect, T_SDL_RECT, fillRect.x, fillRect.y, mainEntityList, &mainEntityListCount);
+			transCoords* rectTransform = centreGraphic((SCREEN_WIDTH / 6), (SCREEN_HEIGHT / 6));
+			SDL_Rect fillRect = {rectTransform->x, rectTransform->y, rectTransform->w, rectTransform->h};
+			entity redRect = createEntity(&fillRect, T_SDL_RECT, fillRect.x, fillRect.y, fillRect.w, fillRect.h, mainEntityList, 1.0, &mainEntityListCount);
 			free(rectTransform);
 			// Main loop
 			while (!quit)
@@ -84,22 +91,10 @@ int main (int argc, char *argv[])
 						// Free things made in main that have memory allocations
 						quit = true;
 					} else if (e.type == SDL_KEYDOWN) {
-						switch(e.key.keysym.sym)
-						{
-							case (SDLK_UP):
-								{
-									updateCamera(&camera, K_UP, mainEntityList);
-
-								}
-							case (SDLK_DOWN):
-								{
-									updateCamera(&camera, K_DOWN, mainEntityList);
-								}
-							default:
-								break;
-						}
+						updateCamera(&camera, e.key.keysym.sym, mainEntityList);
 					}
 				}
+				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 				SDL_Rect* temp = (SDL_Rect*)redRect.thing;
 				SDL_RenderClear(renderer);
 				SDL_Rect tempRect = getDestinationRect(&bgTexture);
@@ -108,6 +103,8 @@ int main (int argc, char *argv[])
 				SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
 				SDL_RenderFillRect(renderer, &fillRect);
 				SDL_RenderPresent(renderer);
+				// GPU usage skyrockets without this
+				SDL_Delay(1);
 			}
 		}
 	}

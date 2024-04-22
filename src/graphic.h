@@ -20,7 +20,7 @@ extern SDL_Renderer* renderer;
 SDL_Surface* loadSurface(char* path);
 struct mTexture loadTexture(char* path, int destTexX, int destTexy, int desTexW, int destTexH);
 SDL_Texture* getTexture(struct entity* selectedEntity);
-SDL_Rect getDestinationRect(struct entity *selectedEntity);
+SDL_Rect getDestinationRect(struct entity* selectedEntity);
 int loadMedia(struct entity** list, int* counter);
 int graphicInit();
 

@@ -1,6 +1,7 @@
 // Standard library & SDL
 #include <stdio.h>
 #include <stdbool.h>
+#include <math.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_render.h>
 
@@ -15,18 +16,18 @@ mTexture bgTextureM;
 bool quit = false;
 
 // Returns coords + width and height for a centered graphic
-int *centreGraphic(int graphicWidth, int graphicHeight)
+transCoords* centreGraphic(int graphicWidth, int graphicHeight)
 {
-	int *transformNums = malloc(16);
-		transformNums[0] = ((SCREEN_WIDTH / 2) - (graphicWidth / 2));
-		transformNums[1] = ((SCREEN_HEIGHT / 2) - (graphicHeight / 2));
-		transformNums[2] = graphicWidth;
-		transformNums[3] = graphicHeight;
-	return transformNums;
+	transCoords* centeredTransCoords = (transCoords*)malloc(sizeof(transCoords));
+	centeredTransCoords->x = ((SCREEN_WIDTH / 2) - (graphicWidth / 2));
+	centeredTransCoords->y = ((SCREEN_HEIGHT / 2) - (graphicHeight / 2));
+	centeredTransCoords->w = graphicWidth;
+	centeredTransCoords->h = graphicHeight;
+	return centeredTransCoords;
 }
 
 // Creates entity
-entity createEntity(void *selectedThing, int selectedType, int posX, int posY, entity **list, int *counter)
+entity createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int zoom, int* counter)
 {
 	entity *newEntity = (entity*)malloc(sizeof(entity));
 	newEntity->thing = selectedThing;
@@ -35,41 +36,76 @@ entity createEntity(void *selectedThing, int selectedType, int posX, int posY, e
 	newEntity->y = posY;
 	newEntity->initX = posX;
 	newEntity->initY = posY;
+	newEntity->zoom = zoom;
 	list[*counter] = newEntity;
 	*counter = *counter + 1;
 	return *newEntity;
 }
 
 // Modifies an entity's coordinates relative to the coordinates of the camera
-void entityRender(entity *selectedEntity, SDL_Rect *camera, int keyChoice)
+void entityRender(entity *selectedEntity, entity *camera, Sint32 keyChoice)
 {
+	// zoomKey: whether zoom performed at all
+	// zoomForm: whether zoom is in or out
+	// zoomMod: modifier to be applied to current zoom of entity
+	bool zoomKey = false;
+	bool zoomForm = NULL;
+	int zoomMod = NULL;
+
 	// Determines based on keypress how to perform maths so as to move world correctly relative camera
 	switch (keyChoice)
 	{
-		case K_UP:
-			selectedEntity->y = selectedEntity->initY - camera->y;
-			break;
-		case K_DOWN:
+		case SDLK_UP:
 			selectedEntity->y = selectedEntity->initY + camera->y;
 			break;
-		case K_LEFT:
-			selectedEntity->x = selectedEntity->initX - camera->x;
+		case SDLK_DOWN:
+			selectedEntity->y = selectedEntity->initY + camera->y;
 			break;
-		case K_RIGHT:
+		case SDLK_LEFT:
 			selectedEntity->x = selectedEntity->initX + camera->x;
 			break;
+		case SDLK_RIGHT:
+			selectedEntity->x = selectedEntity->initX + camera->x;
+			break;
+		case SDLK_EQUALS:
+			zoomKey = true;
+			zoomForm = ZOOM_IN;
+			zoomMod = 25;
+			break;
+		case SDLK_MINUS:
+			zoomKey = true;
+			zoomForm = ZOOM_OUT;
+			zoomMod = -25;
+			break;
 	}
-	// change actual coords per data form
-	if (selectedEntity->form == 0)
+
+	// In case of zoom key pressed, perform these actions regardless of whether in or out
+	if (zoomKey)
 	{
-		SDL_Rect *ptr = (SDL_Rect*)selectedEntity->thing;
-		ptr->x = selectedEntity->x;
-		ptr->y = selectedEntity->y;
-		
-	} else if (selectedEntity->form == 1) {
-		mTexture *ptr = (mTexture*)selectedEntity->thing;
-		ptr->destinationRect.x = selectedEntity->x;
-		ptr->destinationRect.y = selectedEntity->y;
+		selectedEntity->zoom = camera->zoom;
+		//printf("%f\n", selectedEntity->zoom);
+	}
+
+	// change actual coords/transform per data form
+	if (selectedEntity->form == T_SDL_RECT)
+	{
+		SDL_Rect* actualRectPtr = (SDL_Rect*)selectedEntity->thing;
+		actualRectPtr->x = selectedEntity->x;
+		actualRectPtr->y = selectedEntity->y;
+		if (zoomKey)
+		{
+			actualRectPtr->w = actualRectPtr->w + zoomMod;
+			actualRectPtr->h = actualRectPtr->h + zoomMod;
+		}
+	} else if (selectedEntity->form == T_MTEXTURE) {
+		mTexture* mTexPtr = (mTexture*)selectedEntity->thing;
+		mTexPtr->destinationRect.x = selectedEntity->x;
+		mTexPtr->destinationRect.y = selectedEntity->y;
+		if (zoomKey)
+		{
+			mTexPtr->destinationRect.w = mTexPtr->destinationRect.w + zoomMod;
+			mTexPtr->destinationRect.h = mTexPtr->destinationRect.h + zoomMod;
+		}
 	} else {
 		errorHandle(E_UNSUPPORTED_ENTITY_THING_TYPE, selectedEntity->form);
 	}
@@ -77,33 +113,52 @@ void entityRender(entity *selectedEntity, SDL_Rect *camera, int keyChoice)
 }
 
 // Updates camera position depending on movement keys, then calls entityRender
-void updateCamera(SDL_Rect *camera, int keyChoice, entity **list)
+void updateCamera(entity* camera, int keyChoice, entity** list)
 {
 	switch(keyChoice)
 	{
-		case K_UP:
-			(camera->y) = (camera->y) - 1;
+		case SDLK_UP:
+			camera->y = (camera->y - 10);
 			break;
-		case K_DOWN:
-			(camera->y) = (camera->y) + 1;
+		case SDLK_DOWN:
+			camera->y = (camera->y + 10);
 			break;
-		case K_LEFT:
-			(camera->x) = (camera->x) - 1;
+		case SDLK_LEFT:
+			camera->x = (camera->x - 10);
 			break;
-		case K_RIGHT:
-			(camera->x) = (camera->x) + 1;
+		case SDLK_RIGHT:
+			camera->x = (camera->x + 10);
+			break;
+		case SDLK_EQUALS:
+			if (camera->zoom < 2.0)
+			{
+				camera->zoom = (camera->zoom + 0.1);
+			}
+			else {
+				keyChoice = NULL;
+			}
+			break;
+		case SDLK_MINUS:
+			if (camera->zoom > 0.1)
+			{
+				camera->zoom = (camera->zoom - 0.1);
+			}
+			else {
+				keyChoice = NULL;
+			}
 			break;
 	}
 	int i = 0;
 	do
 	{
+		(entity*) list;
 		if (list[i] == NULL)
 		{
 			break;
-		} else {
+		} else if (!(list[i]->form == T_CAMERA)) {
 			entityRender(list[i], camera, keyChoice);
 		}
 		i = i + 1;
-	} while (i < (int)(sizeof(list)/sizeof(list[0])));
+	} while (list[i]->thing != NULL);
 	return;
 }

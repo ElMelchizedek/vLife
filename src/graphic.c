@@ -12,7 +12,7 @@ SDL_Surface* currentSurface = NULL;
 SDL_Renderer* renderer = NULL;
 
 // Loads surface, but can't be used with textures/rendering stuff
-SDL_Surface* loadSurface(char *path)
+SDL_Surface* loadSurface(char* path)
 {
 	// Final optomised image
 	SDL_Surface* actualSurface = NULL;
@@ -73,10 +73,11 @@ SDL_Rect getDestinationRect(entity *selectedEntity)
 }
 
 // Loads media
-int loadMedia(entity **list, int *counter)
+int loadMedia(entity** list, int* counter)
 {
-	bgTextureM = loadTexture("../img/bg.bmp", 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-	bgTexture = createEntity(&bgTextureM, T_MTEXTURE, 0, 0, list, counter);
+	transCoords* transform = centreGraphic(640, 480);
+	bgTextureM = loadTexture("../img/bg.bmp", transform->x, transform->y, 640, 480);
+	bgTexture = createEntity(&bgTextureM, T_MTEXTURE, transform->x, transform->y, 640, 480, list, 1.0, counter);
 	return 0;
 }
 
@@ -103,8 +104,6 @@ int graphicInit()
 			return 1;
 		}
 		else {
-			// Get window surface
-			//screenSurface = SDL_GetWindowSurface(window);
 			// Create renderer
 			renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 			if (renderer == NULL)
