@@ -15,6 +15,12 @@
 #define E_SDL_CREATE_TEXTURE_IMAGE 10
 #define E_UNSUPPORTED_ENTITY_THING_TYPE 11
 #define E_ENTITY_NULL 12
+#define E_CELL_NULL 13
+#define E_ENTITY_MEM 14
+#define E_CELL_DATA_MEM 15
+#define E_GRID_FLOAT 16
+#define E_CELL_THING_MEM 17
+#define E_CELL_GRAPHICS_MEM 18
 
 int errorHandle(int error, ...);
 

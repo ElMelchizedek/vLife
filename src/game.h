@@ -36,10 +36,38 @@ typedef struct transCoords
     int h;
 } transCoords;
 
-// Type macros
+// Camera States: Modified upon SDL_KEYDOWN event whenever that occurs, and is passed every cycle to updateCamera to allow smooth simultaneous camera movement
+typedef struct cStates 
+{
+    bool up;
+    bool down;
+    bool left;
+    bool right;
+    bool in;
+    bool out;
+} cStates;
+
+// Cell Data: The data for the cell, which is paired with cellGraphics to form cellThing
+typedef struct cellData
+{
+    int column;
+    int row;
+    bool lifeState;
+    int aliveNeighbours;
+} cellData;
+
+// Combines together the data and the SDL_Rect to be put into an entity for a cell
+typedef struct cellThing
+{
+    cellData* data;
+    SDL_Rect* graphics;
+} cellThing;
+
+// Form macros
 #define T_CAMERA    0
 #define T_SDL_RECT  1
 #define T_MTEXTURE  2
+#define T_CELL 3
 
 // Zoom macros
 #define ZOOM_IN true
@@ -48,12 +76,14 @@ typedef struct transCoords
 // Variables for other functions
 extern struct entity bgTexture;
 extern struct mTexture bgTextureM;
+extern struct cStates cameraStates;
 extern bool quit;
 
 // Functions
 transCoords *centreGraphic(int graphicWidth, int graphicHeight);
 entity createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int zoom, int* counter);
-void entityRender(entity *selectedEntity, entity *camera, int keyChoice);
-void updateCamera(entity *camera, int keyChoice, entity** list);
+void entityRender(entity *selectedEntity, entity *camera);
+void updateCamera(entity *camera, entity** list);
+cStates *updateCameraStates(bool keyState, int keyChoice);
 
 #endif // GAME_H

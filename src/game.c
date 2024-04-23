@@ -13,6 +13,7 @@
 // Define global variables declared in header
 entity bgTexture;
 mTexture bgTextureM;
+cStates cameraStates = {false, false, false, false, false, false};
 bool quit = false;
 
 // Returns coords + width and height for a centered graphic
@@ -30,10 +31,17 @@ transCoords* centreGraphic(int graphicWidth, int graphicHeight)
 entity createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int zoom, int* counter)
 {
 	entity *newEntity = (entity*)malloc(sizeof(entity));
+	if (newEntity == NULL)
+	{
+		errorHandle(E_ENTITY_MEM);
+		return;
+	}
 	newEntity->thing = selectedThing;
 	newEntity->form = selectedType;
 	newEntity->x = posX;
 	newEntity->y = posY;
+	newEntity->w = initW;
+	newEntity->h = initH;
 	newEntity->initX = posX;
 	newEntity->initY = posY;
 	newEntity->zoom = zoom;
@@ -42,70 +50,144 @@ entity createEntity(void *selectedThing, int selectedType, int posX, int posY, i
 	return *newEntity;
 }
 
+// Creates a singular cell
+entity* createCell(int selectColumn, int selectRow, entity** list, int* counter)
+{
+	SDL_Rect* newGraphics = createCellGraphics((10 * selectRow), (10 * selectColumn), 10, 10);
+
+	cellData* newData = (cellData*)malloc(sizeof(cellData));
+	if (newData == NULL)
+	{
+		errorHandle(E_CELL_DATA_MEM);
+		return;
+	}
+	newData->column = selectColumn;
+	newData->row = selectRow;
+	newData->lifeState = false;
+	newData->aliveNeighbours = 0;
+
+	cellThing* newThing = (cellThing*)malloc(sizeof(cellThing));
+	if (newThing == NULL)
+	{
+		errorHandle(E_CELL_THING_MEM);
+		return;
+	}
+	newThing->data = &newData;
+	newThing->graphics = &newGraphics;
+
+	entity newCell = createEntity(&newThing,
+									T_CELL,
+									newGraphics->x,
+									newGraphics->y,
+									newGraphics->w,
+									newGraphics->h,
+									list,
+									1.0,
+									counter);
+	if (&newCell == NULL)
+	{
+		errorHandle(E_ENTITY_MEM);
+		return;
+	}
+	return &newCell;
+}
+
+// Initialises the grid of cells to be used by the game
+entity **initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int selectLevelHeight, entity** list, int* counter)
+{
+	float gridWidth = ((float)selectLevelWidth / 10);
+	float gridHeight = ((float)selectLevelHeight / 10);
+	if (fmod(gridWidth, 1) || fmod(gridWidth,1))
+	{
+		errorHandle(E_GRID_FLOAT, selectLevelWidth, selectLevelHeight);
+		return;
+	}
+	int k = 0;
+	for (int i = 0; i < gridHeight; ++i)
+	{
+		for (int j = 0; j < gridWidth; ++j)
+		{
+			entity* nextCell = createCell(i, j, list, counter);
+			selectCellGrid[k] = &nextCell;
+			k = k + 1;
+		}
+	}
+	return &selectCellGrid;
+}
+
 // Modifies an entity's coordinates relative to the coordinates of the camera
-void entityRender(entity *selectedEntity, entity *camera, Sint32 keyChoice)
+void entityRender(entity *selectedEntity, entity *camera)
 {
 	// zoomKey: whether zoom performed at all
 	// zoomForm: whether zoom is in or out
 	// zoomMod: modifier to be applied to current zoom of entity
 	bool zoomKey = false;
-	bool zoomForm = NULL;
-	int zoomMod = NULL;
+	bool zoomForm;
+	int zoomMod;
 
 	// Determines based on keypress how to perform maths so as to move world correctly relative camera
-	switch (keyChoice)
-	{
-		case SDLK_UP:
-			selectedEntity->y = selectedEntity->initY + camera->y;
-			break;
-		case SDLK_DOWN:
-			selectedEntity->y = selectedEntity->initY + camera->y;
-			break;
-		case SDLK_LEFT:
-			selectedEntity->x = selectedEntity->initX + camera->x;
-			break;
-		case SDLK_RIGHT:
-			selectedEntity->x = selectedEntity->initX + camera->x;
-			break;
-		case SDLK_EQUALS:
-			zoomKey = true;
-			zoomForm = ZOOM_IN;
-			zoomMod = 25;
-			break;
-		case SDLK_MINUS:
-			zoomKey = true;
-			zoomForm = ZOOM_OUT;
-			zoomMod = -25;
-			break;
+	if (cameraStates.up) {
+		selectedEntity->y = selectedEntity->initY - 10;
+		selectedEntity->x = selectedEntity->initX;
+	} else if (cameraStates.down) {
+		selectedEntity->y = selectedEntity->initY + 10;
+		selectedEntity->x = selectedEntity->initX;
+	} else if (cameraStates.left) {
+		selectedEntity->x = selectedEntity->initX - 10;
+		selectedEntity->y = selectedEntity->initY;
+	} else if (cameraStates.right) {
+		selectedEntity->x = selectedEntity->initX + 10;
+		selectedEntity->y = selectedEntity->initY;
+	} else if (cameraStates.in) {
+		zoomKey = true;
+		zoomForm = ZOOM_IN;
+		zoomMod = 25;
+	} else if (cameraStates.out) {
+		zoomKey = true;
+		zoomForm = ZOOM_OUT;
+		zoomMod = -25;
+	} else {
+		return;
 	}
 
 	// In case of zoom key pressed, perform these actions regardless of whether in or out
 	if (zoomKey)
 	{
 		selectedEntity->zoom = camera->zoom;
-		//printf("%f\n", selectedEntity->zoom);
 	}
 
 	// change actual coords/transform per data form
 	if (selectedEntity->form == T_SDL_RECT)
 	{
 		SDL_Rect* actualRectPtr = (SDL_Rect*)selectedEntity->thing;
-		actualRectPtr->x = selectedEntity->x;
-		actualRectPtr->y = selectedEntity->y;
-		if (zoomKey)
-		{
-			actualRectPtr->w = actualRectPtr->w + zoomMod;
-			actualRectPtr->h = actualRectPtr->h + zoomMod;
+		if (!zoomKey) {
+			actualRectPtr->x = selectedEntity->x;
+			actualRectPtr->y = selectedEntity->y;
+		} else {
+			int oldWidth = actualRectPtr->w;
+			int oldHeight = actualRectPtr->h;
+			actualRectPtr->w = (selectedEntity->w * camera->zoom);
+			actualRectPtr->h = (selectedEntity->h * camera->zoom);
+			actualRectPtr->x = (actualRectPtr->x - ((actualRectPtr->w - oldWidth) / 2));
+			actualRectPtr->y = (actualRectPtr->y - ((actualRectPtr->h - oldHeight) / 2));
 		}
+		selectedEntity->initX = actualRectPtr->x;
+		selectedEntity->initY = actualRectPtr->y;
 	} else if (selectedEntity->form == T_MTEXTURE) {
 		mTexture* mTexPtr = (mTexture*)selectedEntity->thing;
-		mTexPtr->destinationRect.x = selectedEntity->x;
-		mTexPtr->destinationRect.y = selectedEntity->y;
-		if (zoomKey)
-		{
-			mTexPtr->destinationRect.w = mTexPtr->destinationRect.w + zoomMod;
-			mTexPtr->destinationRect.h = mTexPtr->destinationRect.h + zoomMod;
+		if (!zoomKey) {
+			mTexPtr->destinationRect.x = selectedEntity->x;
+			mTexPtr->destinationRect.y = selectedEntity->y;
+		} else {
+			int oldWidth = mTexPtr->destinationRect.w;
+			int oldHeight = mTexPtr->destinationRect.h;
+			mTexPtr->destinationRect.w = (selectedEntity->w * camera->zoom);
+			mTexPtr->destinationRect.h = (selectedEntity->h * camera->zoom);
+			mTexPtr->destinationRect.x = (mTexPtr->destinationRect.x - ((mTexPtr->destinationRect.w - oldWidth) / 2));
+			mTexPtr->destinationRect.y = (mTexPtr->destinationRect.y - ((mTexPtr->destinationRect.h - oldHeight) / 2));
 		}
+		selectedEntity->initX = mTexPtr->destinationRect.x;
+		selectedEntity->initY = mTexPtr->destinationRect.y;
 	} else {
 		errorHandle(E_UNSUPPORTED_ENTITY_THING_TYPE, selectedEntity->form);
 	}
@@ -113,40 +195,29 @@ void entityRender(entity *selectedEntity, entity *camera, Sint32 keyChoice)
 }
 
 // Updates camera position depending on movement keys, then calls entityRender
-void updateCamera(entity* camera, int keyChoice, entity** list)
+void updateCamera(entity* camera, entity** list)
 {
-	switch(keyChoice)
+	if (cameraStates.up)
 	{
-		case SDLK_UP:
-			camera->y = (camera->y - 10);
-			break;
-		case SDLK_DOWN:
-			camera->y = (camera->y + 10);
-			break;
-		case SDLK_LEFT:
-			camera->x = (camera->x - 10);
-			break;
-		case SDLK_RIGHT:
-			camera->x = (camera->x + 10);
-			break;
-		case SDLK_EQUALS:
-			if (camera->zoom < 2.0)
-			{
-				camera->zoom = (camera->zoom + 0.1);
-			}
-			else {
-				keyChoice = NULL;
-			}
-			break;
-		case SDLK_MINUS:
-			if (camera->zoom > 0.1)
-			{
-				camera->zoom = (camera->zoom - 0.1);
-			}
-			else {
-				keyChoice = NULL;
-			}
-			break;
+		camera->y = (camera->y - 10);
+	} else if (cameraStates.down) {
+		camera->y = (camera->y + 10);
+	} else if (cameraStates.left) {
+		camera->x = (camera->x - 10);
+	} else if (cameraStates.right) {
+		camera->x = (camera->x + 10);
+	} else if (cameraStates.in) {
+		if (camera->zoom < 10.0)
+		{
+			camera->zoom = (camera->zoom + 0.1);
+		}
+	} else if (cameraStates.out) {
+		if (camera->zoom > 1.0)
+		{
+			camera->zoom = (camera->zoom - 0.1);
+		}
+	} else {
+		return;
 	}
 	int i = 0;
 	do
@@ -156,9 +227,35 @@ void updateCamera(entity* camera, int keyChoice, entity** list)
 		{
 			break;
 		} else if (!(list[i]->form == T_CAMERA)) {
-			entityRender(list[i], camera, keyChoice);
+			entityRender(list[i], camera);
 		}
 		i = i + 1;
 	} while (list[i]->thing != NULL);
 	return;
+}
+
+// Updates cameraState whenever a SDL_KEYUP or SDL_KEYDOWN event is performed
+cStates *updateCameraStates(bool keyState, int keyChoice)
+{
+	switch(keyChoice)
+	{
+		case SDLK_UP:
+			cameraStates.up = keyState;
+			break;
+		case SDLK_DOWN:
+			cameraStates.down = keyState;
+			break;
+		case SDLK_LEFT:
+			cameraStates.left = keyState;
+			break;
+		case SDLK_RIGHT:
+			cameraStates.right = keyState;
+			break;
+		case SDLK_EQUALS:
+			cameraStates.in = keyState;
+			break;
+		case SDLK_MINUS:
+			cameraStates.out = keyState;
+			break;
+	}
 }

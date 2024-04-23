@@ -52,6 +52,24 @@ int errorHandle(int error, ...)
 		case E_ENTITY_NULL:
 			message = "Entity to be accessed returns NULL\n";
 			break;
+		case E_CELL_NULL:
+			message = "Cell to be accessed returns NULL\n";
+			break;
+		case E_ENTITY_MEM:
+			message = "Failed to allocate memory for new entity\n";
+			break;
+		case E_CELL_DATA_MEM:
+			message = "Failed to allocate memory for new cellData\n";
+			break;
+		case E_GRID_FLOAT:
+			message = "Calculated cell grid from level width %d, or height %d, is non-integer and will break cell initialisation\n";
+			break;
+		case E_CELL_GRAPHICS_MEM:
+			message = "Failed to allocate memory for new cellGraphics\n";
+			break;
+		case E_CELL_THING_MEM:
+			message = "Failed to allocate memory for new cellThing\n";
+			break;
 		default:
 			message = "Unknown error\n";
 			break;

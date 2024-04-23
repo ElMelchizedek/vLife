@@ -11,6 +11,22 @@ SDL_Surface* screenSurface = NULL;
 SDL_Surface* currentSurface = NULL;
 SDL_Renderer* renderer = NULL;
 
+// Creates the graphics for a single cell
+SDL_Rect* createCellGraphics(int selectX, int selectY, int selectW, int selectH)
+{
+	SDL_Rect* newCellGraphics = (SDL_Rect*)malloc(sizeof(SDL_Rect));
+	if (newCellGraphics == NULL)
+	{
+		errorHandle(E_CELL_GRAPHICS_MEM);
+		return;
+	}
+	newCellGraphics->x = selectX;
+	newCellGraphics->y = selectY;
+	newCellGraphics->w = selectW;
+	newCellGraphics->h = selectH;
+	return &newCellGraphics;
+}
+
 // Loads surface, but can't be used with textures/rendering stuff
 SDL_Surface* loadSurface(char* path)
 {

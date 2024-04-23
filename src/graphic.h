@@ -17,6 +17,7 @@ extern SDL_Surface* currentSurface;
 extern SDL_Renderer* renderer;
 
 // Functions
+SDL_Rect* createCellGraphics(int selectX, int selectY, int selectW, int selectH);
 SDL_Surface* loadSurface(char* path);
 struct mTexture loadTexture(char* path, int destTexX, int destTexy, int desTexW, int destTexH);
 SDL_Texture* getTexture(struct entity* selectedEntity);

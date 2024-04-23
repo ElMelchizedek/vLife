@@ -13,8 +13,8 @@
 // Constants
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
-const int LEVEL_WIDTH = 1920;
-const int LEVEL_HEIGHT = 1080;
+const int LEVEL_WIDTH = 1000;
+const int LEVEL_HEIGHT = 1000;
 
 // Quit programme
 void end()
@@ -70,16 +70,21 @@ int main (int argc, char* argv[])
 			SDL_RenderSetViewport(renderer, &mainViewport);
 
 			// Set up camera
-			//transCoords *cameraTransform = centreGraphic(SCREEN_WIDTH, SCREEN_HEIGHT);
 			SDL_Rect cameraRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
 			entity camera = createEntity(&cameraRect, T_CAMERA, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, mainEntityList, 1.0, &mainEntityListCount);
-			//free(cameraTransform);
 
 			// Variables required to be declared before main loop due to memory allocation
-			transCoords* rectTransform = centreGraphic((SCREEN_WIDTH / 6), (SCREEN_HEIGHT / 6));
-			SDL_Rect fillRect = {rectTransform->x, rectTransform->y, rectTransform->w, rectTransform->h};
-			entity redRect = createEntity(&fillRect, T_SDL_RECT, fillRect.x, fillRect.y, fillRect.w, fillRect.h, mainEntityList, 1.0, &mainEntityListCount);
-			free(rectTransform);
+
+			// transCoords* rectTransform = centreGraphic(50, 50);
+			// SDL_Rect outlineRect;
+			// outlineRect.x = rectTransform->x;
+			// outlineRect.y = rectTransform->y;
+			// outlineRect.w = rectTransform->w;
+			// outlineRect.h = rectTransform->h;
+			// entity redRect = createEntity(&outlineRect, T_SDL_RECT, outlineRect.x, outlineRect.y, outlineRect.w, outlineRect.h, mainEntityList, 1.0, &mainEntityListCount);
+
+
+
 			// Main loop
 			while (!quit)
 			{
@@ -88,23 +93,27 @@ int main (int argc, char* argv[])
 				{
 					if (e.type == SDL_QUIT)
 					{
-						// Free things made in main that have memory allocations
 						quit = true;
 					} else if (e.type == SDL_KEYDOWN) {
-						updateCamera(&camera, e.key.keysym.sym, mainEntityList);
+						updateCameraStates(true, e.key.keysym.sym);
+					} else if (e.type == SDL_KEYUP) {
+						updateCameraStates(false, e.key.keysym.sym);
+					} else if (e.type == SDL_MOUSEBUTTONDOWN) {
+						updateCameraStates(false, SDL_MOUSEBUTTONDOWN);
 					}
 				}
+				updateCamera(&camera, mainEntityList);
 				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-				SDL_Rect* temp = (SDL_Rect*)redRect.thing;
-				SDL_RenderClear(renderer);
-				SDL_Rect tempRect = getDestinationRect(&bgTexture);
-				const SDL_Rect* tempRectPtr = &tempRect;
-				SDL_RenderCopy(renderer, getTexture(&bgTexture), NULL, tempRectPtr);
-				SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
-				SDL_RenderFillRect(renderer, &fillRect);
+				// SDL_Rect* temp = (SDL_Rect*)redRect.thing;
+				// SDL_RenderClear(renderer);
+				// SDL_Rect tempRect = getDestinationRect(&bgTexture);
+				// const SDL_Rect* tempRectPtr = &tempRect;
+				// SDL_RenderCopy(renderer, getTexture(&bgTexture), NULL, tempRectPtr);
+				// SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
+				// SDL_RenderDrawRect(renderer, &outlineRect);
 				SDL_RenderPresent(renderer);
 				// GPU usage skyrockets without this
-				SDL_Delay(1);
+				SDL_Delay(17);
 			}
 		}
 	}
