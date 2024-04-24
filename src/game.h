@@ -85,6 +85,6 @@ entity* createEntity(void *selectedThing, int selectedType, int posX, int posY, 
 void entityRender(entity *selectedEntity, entity *camera);
 void updateCamera(entity *camera, entity** list);
 cStates* updateCameraStates(bool keyState, int keyChoice);
-entity** initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int selectLevelHeight, entity** list, int* counter, int* addressList, int* addressCount);
+entity** initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int selectLevelHeight, entity** list, int* counter, void*** addressList, int* addressCount);
 
 #endif // GAME_H

@@ -12,7 +12,7 @@ SDL_Surface* currentSurface = NULL;
 SDL_Renderer* renderer = NULL;
 
 // Creates the graphics for a single cell
-SDL_Rect* createCellGraphics(int selectX, int selectY, int selectW, int selectH, int* addressList, int* addressCount)
+SDL_Rect* createCellGraphics(int selectX, int selectY, int selectW, int selectH, void*** addressList, int* addressCount)
 {
 	SDL_Rect* newCellGraphics = (SDL_Rect*)malloc(sizeof(SDL_Rect));
 	if (newCellGraphics == NULL)
@@ -23,7 +23,7 @@ SDL_Rect* createCellGraphics(int selectX, int selectY, int selectW, int selectH,
 	newCellGraphics->y = selectY;
 	newCellGraphics->w = selectW;
 	newCellGraphics->h = selectH;
-	saveAddress(addressList, addressCount, (uintptr_t)newCellGraphics);
+	saveAddress(addressList, addressCount, (void*)newCellGraphics);
 	return newCellGraphics;
 }
 

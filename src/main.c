@@ -33,21 +33,12 @@ void end()
 	SDL_Quit();
 }
 
-void saveAddress(int *addressList, int* addressCount, uintptr_t selectThing)
+void saveAddress(void*** addressList, int* addressCount, void* selectThing)
 {
-	int* newAddressList = (int*)realloc(addressList, (*addressCount + 2) * sizeof(int));
-	if (newAddressList == NULL)
-	{
-		free(newAddressList);
-		errorHandle(E_REALLOC, "addressList");
-		exit(1);
-	}
-	else {
-		addressList = newAddressList;
-		*addressCount = *addressCount + 1;
-		addressList[*addressCount] = selectThing;
-		return;
-	}
+	*addressCount = *addressCount + 1;
+	*addressList = (void**)realloc(*addressList, *addressCount * sizeof(void*));
+	(*addressList)[*addressCount - 1] = selectThing;
+	return;
 }
 
 int main (int argc, char* argv[])
@@ -59,22 +50,22 @@ int main (int argc, char* argv[])
 	}
 	else {
 		// Array of pointers to memory allocated variables, to be freed on quit
-		int* addressList = (int*)malloc(1 * sizeof(int));
+		void** addressList = (void**)malloc(1 * sizeof(void*));
 		if (addressList == NULL)
 		{
 			errorHandle(E_MEM, "addressList");
 		}
-		addressList[0] = 0;
+		//addressList[0] = (void*)malloc(sizeof(void));
 		int addressListCount = 0;
 		// Declare entity list counter
 		int mainEntityListCount = 0;
 		// Allocate memory for entity list, then initialise its pointer elements
-		entity** mainEntityList = (entity**)malloc(10 * sizeof(entity*));
+		entity** mainEntityList = (entity**)malloc(1000 * sizeof(entity*));
 		if (mainEntityList == NULL)
 		{
 			errorHandle(E_MEM, "mainEntityList");
 		}
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 1000; i++)
 		{
 			mainEntityList[i] = malloc(sizeof(entity));
 			mainEntityList[i]->thing = NULL;
@@ -84,15 +75,15 @@ int main (int argc, char* argv[])
 			mainEntityList[i]->initX = 0;
 			mainEntityList[i]->initY = 0;
 		}
-		saveAddress(addressList, &addressListCount, (uintptr_t)mainEntityList);
+		saveAddress(&addressList, &addressListCount, (void*)mainEntityList);
 		// Allocate memeory for cell grid, then initialise its pointer elements
-		entity** cellGrid = (entity**)malloc(1000 * sizeof(entity*));
+		entity** cellGrid = (entity**)malloc((LEVEL_WIDTH * LEVEL_HEIGHT) * sizeof(entity*));
 		if (cellGrid == NULL)
 		{
 			errorHandle(E_MEM, "cellGrid");
 		}
-		cellGrid = initialiseCellGrid(cellGrid, LEVEL_WIDTH, LEVEL_HEIGHT, mainEntityList, &mainEntityListCount, addressList, &addressListCount);
-		saveAddress(addressList, &addressListCount, (uintptr_t)cellGrid);
+		cellGrid = initialiseCellGrid(cellGrid, LEVEL_WIDTH, LEVEL_HEIGHT, mainEntityList, &mainEntityListCount, &addressList, &addressListCount);
+		saveAddress(&addressList, &addressListCount, (void*)&cellGrid);
 		// Load media
 		if (loadMedia(mainEntityList, &mainEntityListCount))
 		{
@@ -123,8 +114,6 @@ int main (int argc, char* argv[])
 			// outlineRect.h = rectTransform->h;
 			// entity redRect = createEntity(&outlineRect, T_SDL_RECT, outlineRect.x, outlineRect.y, outlineRect.w, outlineRect.h, mainEntityList, 1.0, &mainEntityListCount);
 
-
-
 			// Main loop
 			while (!quit)
 			{
@@ -151,13 +140,23 @@ int main (int argc, char* argv[])
 				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 				// SDL_Rect* temp = (SDL_Rect*)redRect.thing;
 				SDL_RenderClear(renderer);
-				// SDL_Rect tempRect = getDestinationRect(&bgTexture);
-				// const SDL_Rect* tempRectPtr = &tempRect;
-				// SDL_RenderCopy(renderer, getTexture(&bgTexture), NULL, tempRectPtr);
 				// SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
 				// SDL_RenderDrawRect(renderer, &outlineRect);
 				SDL_RenderPresent(renderer);
 				// GPU usage skyrockets without this
+
+				updateCamera(camera, mainEntityList);
+				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+				SDL_RenderClear(renderer);
+				SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
+				for (int i = 0; i < (LEVEL_HEIGHT * LEVEL_WIDTH); i++)
+				{
+					entity* cellPtr = cellGrid[i];
+					cellThing* thingPtr = (cellThing*)cellPtr->thing;
+					SDL_Rect* rectPtr = thingPtr->graphics;
+					SDL_RenderDrawRect(renderer, rectPtr);
+				}
+				SDL_RenderPresent(renderer);
 				SDL_Delay(17);
 			}
 		}

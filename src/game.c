@@ -50,10 +50,10 @@ entity *createEntity(void *selectedThing, int selectedType, int posX, int posY, 
 }
 
 // Creates a singular cell
-entity* createCell(int selectColumn, int selectRow, entity** list, int* counter, int* addressList, int* addressCount)
+entity* createCell(int selectColumn, int selectRow, entity** list, int* counter, void*** addressList, int* addressCount)
 {
 	SDL_Rect* newGraphics = createCellGraphics((10 * selectRow), (10 * selectColumn), 10, 10, addressList, addressCount);
-	saveAddress(addressList, addressCount, (uintptr_t)newGraphics);
+	saveAddress(addressList, addressCount, (void*)newGraphics);
 	cellData* newData = (cellData*)malloc(sizeof(cellData));
 	if (newData == NULL)
 	{
@@ -63,7 +63,7 @@ entity* createCell(int selectColumn, int selectRow, entity** list, int* counter,
 	newData->row = selectRow;
 	newData->lifeState = false;
 	newData->aliveNeighbours = 0;
-	saveAddress(addressList, addressCount, (uintptr_t)newData);
+	saveAddress(addressList, addressCount, (void*)newData);
 
 	cellThing* newThing = (cellThing*)malloc(sizeof(cellThing));
 	if (newThing == NULL)
@@ -72,7 +72,7 @@ entity* createCell(int selectColumn, int selectRow, entity** list, int* counter,
 	}
 	newThing->data = newData;
 	newThing->graphics = newGraphics;
-	saveAddress(addressList, addressCount, (uintptr_t)newThing);
+	saveAddress(addressList, addressCount, (void*)newThing);
 
 	entity* newCell = createEntity(newThing,
 									T_CELL,
@@ -83,24 +83,22 @@ entity* createCell(int selectColumn, int selectRow, entity** list, int* counter,
 									list,
 									1.0,
 									counter);
-	//entity* newCellPtr = &newCell;
 	if (newCell == NULL)
 	{
 		errorHandle(E_MEM, "entity,cell");
 	}
-	saveAddress(addressList, addressCount, (uintptr_t)newCell);
+	saveAddress(addressList, addressCount, (void*)newCell);
 	return newCell;
 }
 
 // Initialises the grid of cells to be used by the game
-entity** initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int selectLevelHeight, entity** list, int* counter,
-							int* addressList, int* addressCount)
+entity** initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int selectLevelHeight, entity** list, int* counter, void*** addressList, int* addressCount)
 {
 	// Declares the amount of cells to be, based on the level size and how big each cell will be
 	float gridWidth = ((float)selectLevelWidth / 10);
 	float gridHeight = ((float)selectLevelHeight / 10);
 	// If we don't get a round number, we'll have issues creating cells and so should abort
-	if (fmod(gridWidth, 1) || fmod(gridWidth,1))
+	if (fmod(gridWidth, 1) || fmod(gridWidth, 1))
 	{
 		errorHandle(E_GRID_FLOAT, selectLevelWidth, selectLevelHeight);
 	}

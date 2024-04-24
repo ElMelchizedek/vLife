@@ -10,6 +10,6 @@ extern const int SCREEN_HEIGHT;
 extern const int LEVEL_WIDTH;
 extern const int LEVEL_HEIGHT;
 
-int *saveAddress(int* addressList, int* addressCount, uintptr_t selectThing);
+void saveAddress(void*** addressList, int* addressCount, void* selectThing);
 
 #endif // MAIN_H
