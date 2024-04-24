@@ -20,9 +20,12 @@ const int LEVEL_HEIGHT = 1000;
 void end()
 {
 	// Deallocate surface, destroy window, etc, & quit
-	SDL_Texture *actualBGTexture = getTexture(&bgTexture);
-	SDL_DestroyTexture(actualBGTexture);
-	actualBGTexture = NULL;
+	if (bgTexture != NULL)
+	{
+		SDL_Texture *actualBGTexture = getTexture(bgTexture);
+		SDL_DestroyTexture(actualBGTexture);
+		actualBGTexture = NULL;
+	}
 	SDL_DestroyRenderer(renderer);
 	renderer = NULL;
 	SDL_DestroyWindow(window);
@@ -30,6 +33,22 @@ void end()
 	SDL_Quit();
 }
 
+void saveAddress(int *addressList, int* addressCount, uintptr_t selectThing)
+{
+	int* newAddressList = (int*)realloc(addressList, (*addressCount + 2) * sizeof(int));
+	if (newAddressList == NULL)
+	{
+		free(newAddressList);
+		errorHandle(E_REALLOC, "addressList");
+		exit(1);
+	}
+	else {
+		addressList = newAddressList;
+		*addressCount = *addressCount + 1;
+		addressList[*addressCount] = selectThing;
+		return;
+	}
+}
 
 int main (int argc, char* argv[])
 {
@@ -39,9 +58,22 @@ int main (int argc, char* argv[])
 		errorHandle(E_INIT);
 	}
 	else {
-		// Initialise entity list with placeholder values
-		entity *mainEntityList[10];
+		// Array of pointers to memory allocated variables, to be freed on quit
+		int* addressList = (int*)malloc(1 * sizeof(int));
+		if (addressList == NULL)
+		{
+			errorHandle(E_MEM, "addressList");
+		}
+		addressList[0] = 0;
+		int addressListCount = 0;
+		// Declare entity list counter
 		int mainEntityListCount = 0;
+		// Allocate memory for entity list, then initialise its pointer elements
+		entity** mainEntityList = (entity**)malloc(10 * sizeof(entity*));
+		if (mainEntityList == NULL)
+		{
+			errorHandle(E_MEM, "mainEntityList");
+		}
 		for (int i = 0; i < 10; i++)
 		{
 			mainEntityList[i] = malloc(sizeof(entity));
@@ -52,7 +84,15 @@ int main (int argc, char* argv[])
 			mainEntityList[i]->initX = 0;
 			mainEntityList[i]->initY = 0;
 		}
-
+		saveAddress(addressList, &addressListCount, (uintptr_t)mainEntityList);
+		// Allocate memeory for cell grid, then initialise its pointer elements
+		entity** cellGrid = (entity**)malloc(1000 * sizeof(entity*));
+		if (cellGrid == NULL)
+		{
+			errorHandle(E_MEM, "cellGrid");
+		}
+		cellGrid = initialiseCellGrid(cellGrid, LEVEL_WIDTH, LEVEL_HEIGHT, mainEntityList, &mainEntityListCount, addressList, &addressListCount);
+		saveAddress(addressList, &addressListCount, (uintptr_t)cellGrid);
 		// Load media
 		if (loadMedia(mainEntityList, &mainEntityListCount))
 		{
@@ -71,7 +111,7 @@ int main (int argc, char* argv[])
 
 			// Set up camera
 			SDL_Rect cameraRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
-			entity camera = createEntity(&cameraRect, T_CAMERA, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, mainEntityList, 1.0, &mainEntityListCount);
+			entity* camera = createEntity(&cameraRect, T_CAMERA, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, mainEntityList, 1.0, &mainEntityListCount);
 
 			// Variables required to be declared before main loop due to memory allocation
 
@@ -93,6 +133,11 @@ int main (int argc, char* argv[])
 				{
 					if (e.type == SDL_QUIT)
 					{
+						for (int i = 0; i <= addressListCount; i++)
+						{
+							free(&addressList[i]);
+							free(&addressList);
+						}
 						quit = true;
 					} else if (e.type == SDL_KEYDOWN) {
 						updateCameraStates(true, e.key.keysym.sym);
@@ -102,10 +147,10 @@ int main (int argc, char* argv[])
 						updateCameraStates(false, SDL_MOUSEBUTTONDOWN);
 					}
 				}
-				updateCamera(&camera, mainEntityList);
+				updateCamera(camera, mainEntityList);
 				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 				// SDL_Rect* temp = (SDL_Rect*)redRect.thing;
-				// SDL_RenderClear(renderer);
+				SDL_RenderClear(renderer);
 				// SDL_Rect tempRect = getDestinationRect(&bgTexture);
 				// const SDL_Rect* tempRectPtr = &tempRect;
 				// SDL_RenderCopy(renderer, getTexture(&bgTexture), NULL, tempRectPtr);

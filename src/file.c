@@ -23,7 +23,7 @@ char *fileRead(const char *fileName)
     buffer = (char *)malloc(sizeof(char) * fileSize);
     if (buffer == NULL)
     {
-        errorHandle(E_BUFFER_NULL);
+        errorHandle(E_NULL, "file buffer");
     }
 
     result = fread(buffer, 1, fileSize, file);

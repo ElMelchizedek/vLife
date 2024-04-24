@@ -12,19 +12,19 @@ SDL_Surface* currentSurface = NULL;
 SDL_Renderer* renderer = NULL;
 
 // Creates the graphics for a single cell
-SDL_Rect* createCellGraphics(int selectX, int selectY, int selectW, int selectH)
+SDL_Rect* createCellGraphics(int selectX, int selectY, int selectW, int selectH, int* addressList, int* addressCount)
 {
 	SDL_Rect* newCellGraphics = (SDL_Rect*)malloc(sizeof(SDL_Rect));
 	if (newCellGraphics == NULL)
 	{
-		errorHandle(E_CELL_GRAPHICS_MEM);
-		return;
+		errorHandle(E_MEM, "cellGraphics");
 	}
 	newCellGraphics->x = selectX;
 	newCellGraphics->y = selectY;
 	newCellGraphics->w = selectW;
 	newCellGraphics->h = selectH;
-	return &newCellGraphics;
+	saveAddress(addressList, addressCount, (uintptr_t)newCellGraphics);
+	return newCellGraphics;
 }
 
 // Loads surface, but can't be used with textures/rendering stuff
@@ -75,9 +75,9 @@ mTexture loadTexture(char *path, int destTexX, int destTexY, int destTexW, int d
 }
 
 // Get SDL_Texture from entity containing mTexture
-SDL_Texture *getTexture(entity *selectedEntity)
+SDL_Texture* getTexture(entity* selectedEntity)
 {
-	mTexture *ptr = (mTexture*)selectedEntity->thing;
+	mTexture* ptr = selectedEntity->thing;
 	return ptr->texture;
 }
 

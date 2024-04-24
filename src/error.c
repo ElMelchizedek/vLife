@@ -31,8 +31,8 @@ int errorHandle(int error, ...)
 		case E_FILE_NOT_FOUND:
 			message = "Failed to find the specified file %s\n";
 			break;
-		case E_BUFFER_NULL:
-			message = "Buffer returned NULL during memory allocation\n";
+		case E_MEM:
+			message = "Failed to allocate memory for %s\n";
 			break;
 		case E_FILE_READ:
 			message = "Failed to read file %s\n";
@@ -49,26 +49,14 @@ int errorHandle(int error, ...)
 		case E_UNSUPPORTED_ENTITY_THING_TYPE:
 			message = "Tried to access an entity that references a variable with an unsupported data form %d\n";
 			break;
-		case E_ENTITY_NULL:
-			message = "Entity to be accessed returns NULL\n";
-			break;
-		case E_CELL_NULL:
-			message = "Cell to be accessed returns NULL\n";
-			break;
-		case E_ENTITY_MEM:
-			message = "Failed to allocate memory for new entity\n";
-			break;
-		case E_CELL_DATA_MEM:
-			message = "Failed to allocate memory for new cellData\n";
+		case E_NULL:
+			message = "Specified referent %s returned NULL\n";
 			break;
 		case E_GRID_FLOAT:
 			message = "Calculated cell grid from level width %d, or height %d, is non-integer and will break cell initialisation\n";
 			break;
-		case E_CELL_GRAPHICS_MEM:
-			message = "Failed to allocate memory for new cellGraphics\n";
-			break;
-		case E_CELL_THING_MEM:
-			message = "Failed to allocate memory for new cellThing\n";
+		case E_REALLOC:
+			message = "Faied to reallocate memory for variable %s\n";
 			break;
 		default:
 			message = "Unknown error\n";

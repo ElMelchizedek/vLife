@@ -11,7 +11,7 @@
 #include "game.h"
 
 // Define global variables declared in header
-entity bgTexture;
+entity* bgTexture = NULL;
 mTexture bgTextureM;
 cStates cameraStates = {false, false, false, false, false, false};
 bool quit = false;
@@ -28,13 +28,12 @@ transCoords* centreGraphic(int graphicWidth, int graphicHeight)
 }
 
 // Creates entity
-entity createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int zoom, int* counter)
+entity *createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int zoom, int* counter)
 {
 	entity *newEntity = (entity*)malloc(sizeof(entity));
 	if (newEntity == NULL)
 	{
-		errorHandle(E_ENTITY_MEM);
-		return;
+		errorHandle(E_MEM, "entity");
 	}
 	newEntity->thing = selectedThing;
 	newEntity->form = selectedType;
@@ -47,35 +46,35 @@ entity createEntity(void *selectedThing, int selectedType, int posX, int posY, i
 	newEntity->zoom = zoom;
 	list[*counter] = newEntity;
 	*counter = *counter + 1;
-	return *newEntity;
+	return newEntity;
 }
 
 // Creates a singular cell
-entity* createCell(int selectColumn, int selectRow, entity** list, int* counter)
+entity* createCell(int selectColumn, int selectRow, entity** list, int* counter, int* addressList, int* addressCount)
 {
-	SDL_Rect* newGraphics = createCellGraphics((10 * selectRow), (10 * selectColumn), 10, 10);
-
+	SDL_Rect* newGraphics = createCellGraphics((10 * selectRow), (10 * selectColumn), 10, 10, addressList, addressCount);
+	saveAddress(addressList, addressCount, (uintptr_t)newGraphics);
 	cellData* newData = (cellData*)malloc(sizeof(cellData));
 	if (newData == NULL)
 	{
-		errorHandle(E_CELL_DATA_MEM);
-		return;
+		errorHandle(E_MEM, "cellData");
 	}
 	newData->column = selectColumn;
 	newData->row = selectRow;
 	newData->lifeState = false;
 	newData->aliveNeighbours = 0;
+	saveAddress(addressList, addressCount, (uintptr_t)newData);
 
 	cellThing* newThing = (cellThing*)malloc(sizeof(cellThing));
 	if (newThing == NULL)
 	{
-		errorHandle(E_CELL_THING_MEM);
-		return;
+		errorHandle(E_MEM, "cellThing");
 	}
-	newThing->data = &newData;
-	newThing->graphics = &newGraphics;
+	newThing->data = newData;
+	newThing->graphics = newGraphics;
+	saveAddress(addressList, addressCount, (uintptr_t)newThing);
 
-	entity newCell = createEntity(&newThing,
+	entity* newCell = createEntity(newThing,
 									T_CELL,
 									newGraphics->x,
 									newGraphics->y,
@@ -84,35 +83,39 @@ entity* createCell(int selectColumn, int selectRow, entity** list, int* counter)
 									list,
 									1.0,
 									counter);
-	if (&newCell == NULL)
+	//entity* newCellPtr = &newCell;
+	if (newCell == NULL)
 	{
-		errorHandle(E_ENTITY_MEM);
-		return;
+		errorHandle(E_MEM, "entity,cell");
 	}
-	return &newCell;
+	saveAddress(addressList, addressCount, (uintptr_t)newCell);
+	return newCell;
 }
 
 // Initialises the grid of cells to be used by the game
-entity **initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int selectLevelHeight, entity** list, int* counter)
+entity** initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int selectLevelHeight, entity** list, int* counter,
+							int* addressList, int* addressCount)
 {
+	// Declares the amount of cells to be, based on the level size and how big each cell will be
 	float gridWidth = ((float)selectLevelWidth / 10);
 	float gridHeight = ((float)selectLevelHeight / 10);
+	// If we don't get a round number, we'll have issues creating cells and so should abort
 	if (fmod(gridWidth, 1) || fmod(gridWidth,1))
 	{
 		errorHandle(E_GRID_FLOAT, selectLevelWidth, selectLevelHeight);
-		return;
 	}
+	// Loop to generate each cell to its starting condition
 	int k = 0;
 	for (int i = 0; i < gridHeight; ++i)
 	{
 		for (int j = 0; j < gridWidth; ++j)
 		{
-			entity* nextCell = createCell(i, j, list, counter);
-			selectCellGrid[k] = &nextCell;
+			entity* nextCell = createCell(i, j, list, counter, addressList, addressCount);
+			selectCellGrid[k] = nextCell;
 			k = k + 1;
 		}
 	}
-	return &selectCellGrid;
+	return selectCellGrid;
 }
 
 // Modifies an entity's coordinates relative to the coordinates of the camera

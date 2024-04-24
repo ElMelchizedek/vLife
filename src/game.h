@@ -74,16 +74,17 @@ typedef struct cellThing
 #define ZOOM_OUT false
 
 // Variables for other functions
-extern struct entity bgTexture;
+extern struct entity* bgTexture;
 extern struct mTexture bgTextureM;
 extern struct cStates cameraStates;
 extern bool quit;
 
 // Functions
-transCoords *centreGraphic(int graphicWidth, int graphicHeight);
-entity createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int zoom, int* counter);
+transCoords* centreGraphic(int graphicWidth, int graphicHeight);
+entity* createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int zoom, int* counter);
 void entityRender(entity *selectedEntity, entity *camera);
 void updateCamera(entity *camera, entity** list);
-cStates *updateCameraStates(bool keyState, int keyChoice);
+cStates* updateCameraStates(bool keyState, int keyChoice);
+entity** initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int selectLevelHeight, entity** list, int* counter, int* addressList, int* addressCount);
 
 #endif // GAME_H
