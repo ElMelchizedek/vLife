@@ -18,6 +18,7 @@ typedef struct entity
     int initX;
     int initY;
     float zoom;
+    bool changed;
 } entity;
 
 // Moveable Texture: Joins an SDL_Texture and the corresponding SDL_Rect it will be mapped onto, for ease of use when being altered
@@ -83,8 +84,8 @@ extern bool quit;
 transCoords* centreGraphic(int graphicWidth, int graphicHeight);
 entity* createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int zoom, int* counter);
 void entityRender(entity *selectedEntity, entity *camera);
-void updateCamera(entity *camera, entity** list);
-cStates* updateCameraStates(bool keyState, int keyChoice);
+void updateCamera(entity *camera, entity** list, entity*** cellGrid);
+void updateCameraStates(bool keyState, int keyChoice);
 entity** initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int selectLevelHeight, entity** list, int* counter, void*** addressList, int* addressCount);
 
 #endif // GAME_H

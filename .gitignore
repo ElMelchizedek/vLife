@@ -1,3 +1,6 @@
 *.o
 .git/
 vgcore.*
+.vscode/*
+*.dSYM
+.DS_Store

@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "stdio.h": "c",
-        "sdl.h": "c",
-        "charconv": "c",
-        "graphic.h": "c"
-    }
-}

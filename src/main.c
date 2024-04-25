@@ -60,12 +60,12 @@ int main (int argc, char* argv[])
 		// Declare entity list counter
 		int mainEntityListCount = 0;
 		// Allocate memory for entity list, then initialise its pointer elements
-		entity** mainEntityList = (entity**)malloc(1000 * sizeof(entity*));
+		entity** mainEntityList = (entity**)malloc(10010 * sizeof(entity*));
 		if (mainEntityList == NULL)
 		{
 			errorHandle(E_MEM, "mainEntityList");
 		}
-		for (int i = 0; i < 1000; i++)
+		for (int i = 0; i < 10010; i++)
 		{
 			mainEntityList[i] = malloc(sizeof(entity));
 			mainEntityList[i]->thing = NULL;
@@ -77,7 +77,7 @@ int main (int argc, char* argv[])
 		}
 		saveAddress(&addressList, &addressListCount, (void*)mainEntityList);
 		// Allocate memeory for cell grid, then initialise its pointer elements
-		entity** cellGrid = (entity**)malloc((LEVEL_WIDTH * LEVEL_HEIGHT) * sizeof(entity*));
+		entity** cellGrid = (entity**)malloc(10000 * sizeof(entity*));
 		if (cellGrid == NULL)
 		{
 			errorHandle(E_MEM, "cellGrid");
@@ -104,16 +104,6 @@ int main (int argc, char* argv[])
 			SDL_Rect cameraRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
 			entity* camera = createEntity(&cameraRect, T_CAMERA, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, mainEntityList, 1.0, &mainEntityListCount);
 
-			// Variables required to be declared before main loop due to memory allocation
-
-			// transCoords* rectTransform = centreGraphic(50, 50);
-			// SDL_Rect outlineRect;
-			// outlineRect.x = rectTransform->x;
-			// outlineRect.y = rectTransform->y;
-			// outlineRect.w = rectTransform->w;
-			// outlineRect.h = rectTransform->h;
-			// entity redRect = createEntity(&outlineRect, T_SDL_RECT, outlineRect.x, outlineRect.y, outlineRect.w, outlineRect.h, mainEntityList, 1.0, &mainEntityListCount);
-
 			// Main loop
 			while (!quit)
 			{
@@ -124,8 +114,7 @@ int main (int argc, char* argv[])
 					{
 						for (int i = 0; i <= addressListCount; i++)
 						{
-							free(&addressList[i]);
-							free(&addressList);
+							free(addressList[i]);
 						}
 						quit = true;
 					} else if (e.type == SDL_KEYDOWN) {
@@ -136,25 +125,17 @@ int main (int argc, char* argv[])
 						updateCameraStates(false, SDL_MOUSEBUTTONDOWN);
 					}
 				}
-				updateCamera(camera, mainEntityList);
-				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-				// SDL_Rect* temp = (SDL_Rect*)redRect.thing;
-				SDL_RenderClear(renderer);
-				// SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
-				// SDL_RenderDrawRect(renderer, &outlineRect);
-				SDL_RenderPresent(renderer);
-				// GPU usage skyrockets without this
-
-				updateCamera(camera, mainEntityList);
+				updateCamera(camera, mainEntityList, &cellGrid);
 				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 				SDL_RenderClear(renderer);
 				SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
-				for (int i = 0; i < (LEVEL_HEIGHT * LEVEL_WIDTH); i++)
+				
+				for (int i = 0; i < 10000; i++)
 				{
 					entity* cellPtr = cellGrid[i];
 					cellThing* thingPtr = (cellThing*)cellPtr->thing;
 					SDL_Rect* rectPtr = thingPtr->graphics;
-					SDL_RenderDrawRect(renderer, rectPtr);
+					SDL_RenderDrawRect(renderer, rectPtr); 
 				}
 				SDL_RenderPresent(renderer);
 				SDL_Delay(17);

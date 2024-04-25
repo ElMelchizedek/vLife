@@ -44,6 +44,7 @@ entity *createEntity(void *selectedThing, int selectedType, int posX, int posY, 
 	newEntity->initX = posX;
 	newEntity->initY = posY;
 	newEntity->zoom = zoom;
+	newEntity->changed = false;
 	list[*counter] = newEntity;
 	*counter = *counter + 1;
 	return newEntity;
@@ -52,7 +53,7 @@ entity *createEntity(void *selectedThing, int selectedType, int posX, int posY, 
 // Creates a singular cell
 entity* createCell(int selectColumn, int selectRow, entity** list, int* counter, void*** addressList, int* addressCount)
 {
-	SDL_Rect* newGraphics = createCellGraphics((10 * selectRow), (10 * selectColumn), 10, 10, addressList, addressCount);
+	SDL_Rect* newGraphics = createCellGraphics((selectRow) * 50, (selectColumn) * 50, 50, 50, addressList, addressCount);
 	saveAddress(addressList, addressCount, (void*)newGraphics);
 	cellData* newData = (cellData*)malloc(sizeof(cellData));
 	if (newData == NULL)
@@ -108,6 +109,7 @@ entity** initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int s
 	{
 		for (int j = 0; j < gridWidth; ++j)
 		{
+			printf("k%d\n", k);
 			entity* nextCell = createCell(i, j, list, counter, addressList, addressCount);
 			selectCellGrid[k] = nextCell;
 			k = k + 1;
@@ -128,39 +130,43 @@ void entityRender(entity *selectedEntity, entity *camera)
 
 	// Determines based on keypress how to perform maths so as to move world correctly relative camera
 	if (cameraStates.up) {
-		selectedEntity->y = selectedEntity->initY - 10;
-		selectedEntity->x = selectedEntity->initX;
-	} else if (cameraStates.down) {
 		selectedEntity->y = selectedEntity->initY + 10;
 		selectedEntity->x = selectedEntity->initX;
+	} else if (cameraStates.down) {
+		selectedEntity->y = selectedEntity->initY - 10;
+		selectedEntity->x = selectedEntity->initX;
 	} else if (cameraStates.left) {
-		selectedEntity->x = selectedEntity->initX - 10;
-		selectedEntity->y = selectedEntity->initY;
-	} else if (cameraStates.right) {
 		selectedEntity->x = selectedEntity->initX + 10;
 		selectedEntity->y = selectedEntity->initY;
+	} else if (cameraStates.right) {
+		selectedEntity->x = selectedEntity->initX - 10;
+		selectedEntity->y = selectedEntity->initY;
 	} else if (cameraStates.in) {
+		selectedEntity->x = selectedEntity->initX;
+		selectedEntity->y = selectedEntity->initY;
 		zoomKey = true;
 		zoomForm = ZOOM_IN;
 		zoomMod = 25;
 	} else if (cameraStates.out) {
+		selectedEntity->x = selectedEntity->initX;
+		selectedEntity->y = selectedEntity->initY;
 		zoomKey = true;
 		zoomForm = ZOOM_OUT;
 		zoomMod = -25;
 	} else {
 		return;
 	}
-
-	// In case of zoom key pressed, perform these actions regardless of whether in or out
+	
 	if (zoomKey)
 	{
 		selectedEntity->zoom = camera->zoom;
 	}
 
 	// change actual coords/transform per data form
-	if (selectedEntity->form == T_SDL_RECT)
+	if (selectedEntity->form == T_CELL)
 	{
-		SDL_Rect* actualRectPtr = (SDL_Rect*)selectedEntity->thing;
+		cellThing* thingPtr = (cellThing*)selectedEntity->thing;
+		SDL_Rect* actualRectPtr = thingPtr->graphics;
 		if (!zoomKey) {
 			actualRectPtr->x = selectedEntity->x;
 			actualRectPtr->y = selectedEntity->y;
@@ -170,33 +176,70 @@ void entityRender(entity *selectedEntity, entity *camera)
 			actualRectPtr->w = (selectedEntity->w * camera->zoom);
 			actualRectPtr->h = (selectedEntity->h * camera->zoom);
 			actualRectPtr->x = (actualRectPtr->x - ((actualRectPtr->w - oldWidth) / 2));
-			actualRectPtr->y = (actualRectPtr->y - ((actualRectPtr->h - oldHeight) / 2));
+			actualRectPtr->y = (actualRectPtr->y - ((actualRectPtr->h - oldHeight) / 2));			
 		}
 		selectedEntity->initX = actualRectPtr->x;
 		selectedEntity->initY = actualRectPtr->y;
-	} else if (selectedEntity->form == T_MTEXTURE) {
-		mTexture* mTexPtr = (mTexture*)selectedEntity->thing;
-		if (!zoomKey) {
-			mTexPtr->destinationRect.x = selectedEntity->x;
-			mTexPtr->destinationRect.y = selectedEntity->y;
-		} else {
-			int oldWidth = mTexPtr->destinationRect.w;
-			int oldHeight = mTexPtr->destinationRect.h;
-			mTexPtr->destinationRect.w = (selectedEntity->w * camera->zoom);
-			mTexPtr->destinationRect.h = (selectedEntity->h * camera->zoom);
-			mTexPtr->destinationRect.x = (mTexPtr->destinationRect.x - ((mTexPtr->destinationRect.w - oldWidth) / 2));
-			mTexPtr->destinationRect.y = (mTexPtr->destinationRect.y - ((mTexPtr->destinationRect.h - oldHeight) / 2));
+	//} else {
+		//errorHandle(E_UNSUPPORTED_ENTITY_THING_TYPE, selectedEntity->form);
+	}
+	return;
+}
+
+void cellZoomSpace(entity*** cellGridPtr, bool zoomMod)
+{
+	int actualLevelWidth = (LEVEL_WIDTH / 10);
+	entity** cellGrid = *cellGridPtr;
+	int zoomFactor = 0;
+	if (zoomMod)
+	{
+		zoomFactor = 10;
+	}
+	else
+	{
+		zoomFactor = -10;
+	}
+	for (int i = 0; i < 10000; i++)
+	{
+		cellThing* currentThing = (cellThing*)cellGrid[i]->thing;
+		cellData* currentData = currentThing->data;
+		entity currentCell = *cellGrid[i];
+		if (currentCell.changed == false)
+		{
+			//printf("old initX %d\n", currentCell.initX);
+			if ((*currentData).column > 0)
+			{
+				currentCell.initX = (currentCell.initX + zoomFactor); 
+				currentCell.initY = (currentCell.initY + zoomFactor); 
+			} else if ((*currentData).column < actualLevelWidth)
+			{
+				currentCell.initX = (currentCell.initX + zoomFactor);
+				currentCell.initY = (currentCell.initY + zoomFactor);
+			} else if ((*currentData).row > 0) 
+			{
+				currentCell.initX = (currentCell.initX + zoomFactor);
+				currentCell.initY = (currentCell.initY + zoomFactor);
+			} else if ((*currentData).row < actualLevelWidth)
+			{
+				currentCell.initX = (currentCell.initX + zoomFactor);
+				currentCell.initY = (currentCell.initY + zoomFactor);
+			}
+			//printf("new initX %d\n", currentCell.initX);
+		currentCell.changed = true;
 		}
-		selectedEntity->initX = mTexPtr->destinationRect.x;
-		selectedEntity->initY = mTexPtr->destinationRect.y;
-	} else {
-		errorHandle(E_UNSUPPORTED_ENTITY_THING_TYPE, selectedEntity->form);
+	}	
+	for (int i = 0; i < 10000; i++)
+	{
+		cellThing* currentThing = (cellThing*)cellGrid[i]->thing;
+		cellData* currentData = currentThing->data;
+		entity currentCell = *cellGrid[i];
+		currentCell.changed = false;
 	}
 	return;
 }
 
 // Updates camera position depending on movement keys, then calls entityRender
-void updateCamera(entity* camera, entity** list)
+void updateCamera(entity* camera, entity** list, entity*** cellGrid)
 {
 	if (cameraStates.up)
 	{
@@ -211,11 +254,13 @@ void updateCamera(entity* camera, entity** list)
 		if (camera->zoom < 10.0)
 		{
 			camera->zoom = (camera->zoom + 0.1);
+			cellZoomSpace(cellGrid, true);
 		}
 	} else if (cameraStates.out) {
 		if (camera->zoom > 1.0)
 		{
 			camera->zoom = (camera->zoom - 0.1);
+			cellZoomSpace(cellGrid, false);
 		}
 	} else {
 		return;
@@ -223,7 +268,7 @@ void updateCamera(entity* camera, entity** list)
 	int i = 0;
 	do
 	{
-		(entity*) list;
+		//(entity*) list;
 		if (list[i] == NULL)
 		{
 			break;
@@ -236,7 +281,7 @@ void updateCamera(entity* camera, entity** list)
 }
 
 // Updates cameraState whenever a SDL_KEYUP or SDL_KEYDOWN event is performed
-cStates *updateCameraStates(bool keyState, int keyChoice)
+void updateCameraStates(bool keyState, int keyChoice)
 {
 	switch(keyChoice)
 	{
