@@ -17,7 +17,6 @@ typedef struct entity
     int h;
     int initX;
     int initY;
-    float zoom;
     bool changed;
 } entity;
 
@@ -44,8 +43,6 @@ typedef struct cStates
     bool down;
     bool left;
     bool right;
-    bool in;
-    bool out;
 } cStates;
 
 // Cell Data: The data for the cell, which is paired with cellGraphics to form cellThing
@@ -55,6 +52,10 @@ typedef struct cellData
     int row;
     bool lifeState;
     int aliveNeighbours;
+    int neighbourUp;
+    int neighbourRight;
+    int neighbourDown;
+    int neighbourLeft;
 } cellData;
 
 // Combines together the data and the SDL_Rect to be put into an entity for a cell
@@ -82,7 +83,7 @@ extern bool quit;
 
 // Functions
 transCoords* centreGraphic(int graphicWidth, int graphicHeight);
-entity* createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int zoom, int* counter);
+entity* createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int* counter);
 void entityRender(entity *selectedEntity, entity *camera);
 void updateCamera(entity *camera, entity** list, entity*** cellGrid);
 void updateCameraStates(bool keyState, int keyChoice);

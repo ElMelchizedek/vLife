@@ -93,7 +93,7 @@ int loadMedia(entity** list, int* counter)
 {
 	transCoords* transform = centreGraphic(640, 480);
 	bgTextureM = loadTexture("../img/bg.bmp", transform->x, transform->y, 640, 480);
-	bgTexture = createEntity(&bgTextureM, T_MTEXTURE, transform->x, transform->y, 640, 480, list, 1.0, counter);
+	bgTexture = createEntity(&bgTextureM, T_MTEXTURE, transform->x, transform->y, 640, 480, list, counter);
 	return 0;
 }
 

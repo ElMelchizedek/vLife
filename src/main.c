@@ -13,8 +13,8 @@
 // Constants
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
-const int LEVEL_WIDTH = 1000;
-const int LEVEL_HEIGHT = 1000;
+const int LEVEL_WIDTH = 350;
+const int LEVEL_HEIGHT = 350; 
 
 // Quit programme
 void end()
@@ -102,7 +102,7 @@ int main (int argc, char* argv[])
 
 			// Set up camera
 			SDL_Rect cameraRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
-			entity* camera = createEntity(&cameraRect, T_CAMERA, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, mainEntityList, 1.0, &mainEntityListCount);
+			entity* camera = createEntity(&cameraRect, T_CAMERA, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, mainEntityList, &mainEntityListCount);
 
 			// Main loop
 			while (!quit)
@@ -128,9 +128,9 @@ int main (int argc, char* argv[])
 				updateCamera(camera, mainEntityList, &cellGrid);
 				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 				SDL_RenderClear(renderer);
-				SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
+				SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 				
-				for (int i = 0; i < 10000; i++)
+				for (int i = 0; i < ((LEVEL_WIDTH / 10) * (LEVEL_HEIGHT / 10)); i++)
 				{
 					entity* cellPtr = cellGrid[i];
 					cellThing* thingPtr = (cellThing*)cellPtr->thing;
