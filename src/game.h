@@ -17,7 +17,6 @@ typedef struct entity
     int h;
     int initX;
     int initY;
-    bool changed;
 } entity;
 
 // Key States: passed every cycle to updateGame, used for moving the camera.
@@ -47,6 +46,7 @@ typedef struct cellData
     int row;
     bool lifeState;
     int aliveNeighbours;
+    bool alreadyChanged;
 } cellData;
 
 // Combines together the data and the SDL_Rect to be put into an entity for a cell
@@ -80,9 +80,10 @@ extern bool quit;
 entity* createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int* counter);
 void entityUpdate(entity *selectedEntity, entity *camera);
 void updateGame(entity *camera, entity** list);
-void updateKeyStates(bool keyState, int keyChoice);
+void updateKeyStates(bool keyState, int keyChoice, entity** grid);
 entity** initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int selectLevelHeight, entity** list, int* counter, void*** addressList, int* addressCount);
 void updateCellStates(bool state, int posX, int posY, entity** cellGrid);
 void simulate(entity** grid);
+void calculate(entity** grid);
 
 #endif // GAME_H

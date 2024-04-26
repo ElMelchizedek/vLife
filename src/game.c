@@ -14,6 +14,60 @@
 kStates keyStates = {false, false, false, false};
 bool quit = false;
 
+// Returns all cells to "not changed" so that they can be flipped by simulation in next tick, and recalculates how many alive neighbours each cell has.
+void calculate(entity** grid)
+{
+	for (int i = 0; i < 1225; i++)
+	{
+		entity* cellPtr = grid[i];
+		cellThing* thingPtr = (cellThing*)grid[i]->thing;
+		cellData* dataPtr = thingPtr->data;
+		for (int j = 0; j < 1225; j++)
+		{
+			cellThing* currentThingPtr = (cellThing*)grid[j]->thing;
+			cellData* currentDataPtr = currentThingPtr->data;
+			if 	((((currentDataPtr->row == (dataPtr->row - 1)) && (currentDataPtr->column == dataPtr->column))	// North
+				||((currentDataPtr->row == (dataPtr->row + 1)) && (currentDataPtr->column == dataPtr->column)) 	// South
+				||((currentDataPtr->column == (dataPtr->column - 1)) && (currentDataPtr->row == dataPtr->row))	// West
+				||((currentDataPtr->column == (dataPtr->column + 1)) && (currentDataPtr->row == dataPtr->row))	// East
+				||((currentDataPtr->row == (dataPtr->row - 1)) && (currentDataPtr->column == (dataPtr->column + 1))) // North-east
+				||((currentDataPtr->row == (dataPtr->row + 1)) && (currentDataPtr->column == (dataPtr->column + 1))) // South-east
+				||((currentDataPtr->row == (dataPtr->row - 1)) && (currentDataPtr->column == (dataPtr->column - 1))) // North-west
+				||((currentDataPtr->row == (dataPtr->row + 1)) && (currentDataPtr->column == (dataPtr->column - 1))) // South-west
+				) && (currentDataPtr->lifeState))
+				{
+					dataPtr->aliveNeighbours++;
+				}
+		}
+	}
+}
+
+// Once started, will simulate Conway's game determined by the cells activated before start.
+void simulate(entity** grid)
+{
+	for (int i = 0; i < 1225; i++)
+	{
+		cellThing* thingPtr = (cellThing*)grid[i]->thing;
+		cellData* dataPtr = thingPtr->data;
+
+		// Alter cell depending on conditions of the game
+		if (dataPtr->lifeState == true)
+		{
+			if (dataPtr->aliveNeighbours <= 1 || dataPtr->aliveNeighbours >= 4)
+			{
+				dataPtr->lifeState = false;
+			}
+			continue;
+		} else if (dataPtr->lifeState == false) {
+			if (dataPtr->aliveNeighbours == 3)
+			{
+				dataPtr->lifeState = true;
+			}
+			continue;
+		}
+	}
+}
+
 // Creates entity
 entity *createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int* counter)
 {
@@ -30,7 +84,6 @@ entity *createEntity(void *selectedThing, int selectedType, int posX, int posY, 
 	newEntity->h = initH;
 	newEntity->initX = posX;
 	newEntity->initY = posY;
-	newEntity->changed = false;
 	list[*counter] = newEntity;
 	*counter = *counter + 1;
 	return newEntity;
@@ -50,6 +103,7 @@ entity* createCell(int selectColumn, int selectRow, entity** list, int* counter,
 	newData->row = selectRow;
 	newData->lifeState = false;
 	newData->aliveNeighbours = 0;
+	newData->alreadyChanged = false;
 	saveAddress(addressList, addressCount, (void*)newData);
 
 	cellThing* newThing = (cellThing*)malloc(sizeof(cellThing));
@@ -94,7 +148,6 @@ entity** initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int s
 	{
 		for (int j = 0; j < gridWidth; ++j)
 		{
-			printf("k%d\n", k);
 			entity* nextCell = createCell(i, j, list, counter, addressList, addressCount, k);
 			selectCellGrid[k] = nextCell;
 			k = k + 1;
@@ -154,7 +207,7 @@ void updateGame(entity* camera, entity** list)
 }
 
 // Updates keyStates whenever a valid key is pressed (whether on keyboard or mouse).
-void updateKeyStates(bool keyState, int keyChoice)
+void updateKeyStates(bool keyState, int keyChoice, entity** grid)
 {
 	switch(keyChoice)
 	{
@@ -202,126 +255,6 @@ void updateCellStates(bool state, int posX, int posY, entity** grid)
 				}
 			}
 		}	
-	}
-	return;
-}
-
-// Once started, will simulate Conway's game determined by the cells activated before start.
-void simulate(entity** grid)
-{
-	for (int i = 0; i < 1225; i++)
-	{
-		entity* cellPtr = grid[i];
-		cellThing* thingPtr = (cellThing*)grid[i]->thing;
-		cellData* dataPtr = thingPtr->data;
-
-		cellThing* northThingPtr;
-		cellThing* southThingPtr;
-		cellThing* westThingPtr;
-		cellThing* eastThingPtr;
-		cellThing* northEastThingPtr;
-		cellThing* southEastThingPtr;
-		cellThing* southWestThingPtr;
-		cellThing* northWestThingPtr;
-
-		cellData* northDataPtr;
-		cellData* southDataPtr;
-		cellData* westDataPtr;
-		cellData* eastDataPtr;
-		cellData* northEastDataPtr;
-		cellData* southEastDataPtr;
-		cellData* southWestDataPtr;
-		cellData* northWestDataPtr;
-
-		// Gets the neighbours of the currently selected cell
-		
-		for (int j = 0; j < 1225; j++)
-		{
-			cellThing* currentThingPtr = (cellThing*)grid[j]->thing;
-			cellData* currentDataPtr = thingPtr->data;
-			if 	(((currentDataPtr->row == (dataPtr->row - 1)) && (currentDataPtr->column == dataPtr->column)	// North
-				||((currentDataPtr->row == (dataPtr->row + 1)) && (currentDataPtr->column == dataPtr->column)) 	// South
-				||((currentDataPtr->column == (dataPtr->column - 1)) && (currentDataPtr->row == dataPtr->row))	// West
-				||((currentDataPtr->column == (dataPtr->column + 1)) && (currentDataPtr->row == dataPtr->row))	// East
-				||((currentDataPtr->row == (dataPtr->row - 1)) && (currentDataPtr->column == (dataPtr->column + 1))) // North-east
-				||((currentDataPtr->row == (dataPtr->row + 1)) && (currentDataPtr->column == (dataPtr->column + 1))) // South-east
-				||((currentDataPtr->row == (dataPtr->row - 1)) && (currentDataPtr->column == (dataPtr->column - 1))) // North-west
-				||((currentDataPtr->row == (dataPtr->row + 1)) && (currentDataPtr->column == (dataPtr->column - 1))) // South-west
-				) && (currentDataPtr->lifeState) )
-				{
-					dataPtr->aliveNeighbours++;
-				}
-		}
-
-		// if (grid[i - (LEVEL_WIDTH)])
-		// {
-		// 	northThingPtr = (cellThing*)grid[i - (LEVEL_WIDTH)]->thing;
-		// 	northDataPtr = northThingPtr->data;
-		// }
-		// if (grid[i + (LEVEL_WIDTH)])
-		// {
-		// 	southThingPtr = (cellThing*)grid[i + (LEVEL_WIDTH)]->thing;
-		// 	southDataPtr = southThingPtr->data;
-		// }
-		// if (grid[i - 1])
-		// {
-		// 	westThingPtr = (cellThing*)grid[i - 1]->thing;
-		// 	westDataPtr = westThingPtr->data;
-		// }
-		// if (grid[i + 1])
-		// {
-		// 	eastThingPtr = (cellThing*)grid[i + 1]->thing;
-		// 	eastDataPtr = eastThingPtr->data;
-		// }
-		// if (grid[i - (LEVEL_WIDTH + 1)])
-		// {
-		// 	northEastThingPtr = (cellThing*)grid[i - (LEVEL_WIDTH + 1)]->thing;
-		// 	northEastDataPtr = northEastThingPtr->data;
-		// }
-		// if (grid[i - (LEVEL_WIDTH - 1)])
-		// {
-		// 	northWestThingPtr = (cellThing*)grid[i - (LEVEL_WIDTH - 1)]->thing;
-		// 	northWestDataPtr = northWestThingPtr->data;
-		// }
-		// if (grid[i + (LEVEL_WIDTH + 1)])
-		// {
-		// 	southEastThingPtr = (cellThing*)grid[i + (LEVEL_WIDTH + 1)]->thing;
-		// 	southEastDataPtr = southEastThingPtr->data;
-		// }
-		// if (grid[i + (LEVEL_WIDTH - 1)])
-		// {
-		// 	southWestThingPtr = (cellThing*)grid[i + (LEVEL_WIDTH - 1)]->thing;
-		// 	southWestDataPtr = southWestThingPtr->data;
-		// }
-
-
-		// Determines how many of them are alive
-		// if (northDataPtr->lifeState) { 
-		// 	dataPtr->aliveNeighbours++; }
-		// if (southDataPtr->lifeState) { 
-		// 	dataPtr->aliveNeighbours++; }
-		// if (westDataPtr->lifeState) { 
-		// 	dataPtr->aliveNeighbours++; }
-		// if (eastDataPtr->lifeState) { 
-		// 	dataPtr->aliveNeighbours++; }
-		// if (northEastDataPtr->lifeState ) { dataPtr->aliveNeighbours++; }
-		// if (southEastDataPtr->lifeState ) { dataPtr->aliveNeighbours++; }
-		// if (northWestDataPtr->lifeState ) { dataPtr->aliveNeighbours++; }
-		// if (southWestDataPtr->lifeState ) { dataPtr->aliveNeighbours++; }
-
-		// Alter cell depending on conditions of the game
-		if (dataPtr->lifeState)
-		{
-			if (dataPtr->aliveNeighbours < 2 || dataPtr->aliveNeighbours > 3)
-			{
-				dataPtr->lifeState = false;
-			}
-		} else {
-			if (dataPtr->aliveNeighbours == 3)
-			{
-				dataPtr->lifeState = true;
-			}
-		}
 	}
 	return;
 }

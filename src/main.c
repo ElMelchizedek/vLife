@@ -107,9 +107,9 @@ int main (int argc, char* argv[])
 					}
 					quit = true;
 				} else if (e.type == SDL_KEYDOWN) {
-					updateKeyStates(true, e.key.keysym.sym);
+					updateKeyStates(true, e.key.keysym.sym, cellGrid);
 				} else if (e.type == SDL_KEYUP) {
-					updateKeyStates(false, e.key.keysym.sym);
+					updateKeyStates(false, e.key.keysym.sym, cellGrid);
 				} else if (keyStates.start == false) {
 					if (e.type == SDL_MOUSEBUTTONDOWN) {
 						updateCellStates(true, e.button.x, e.button.y, cellGrid);
@@ -125,6 +125,7 @@ int main (int argc, char* argv[])
 
 			if (keyStates.start)
 			{
+				calculate(cellGrid);
 				simulate(cellGrid);
 			}
 
@@ -141,6 +142,7 @@ int main (int argc, char* argv[])
 				}
 			}
 			SDL_RenderPresent(renderer);
+			//keyStates.start = false;
 			SDL_Delay(17);
 		}
 	}
