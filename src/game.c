@@ -11,21 +11,8 @@
 #include "game.h"
 
 // Define global variables declared in header
-entity* bgTexture = NULL;
-mTexture bgTextureM;
-cStates cameraStates = {false, false, false, false};
+kStates keyStates = {false, false, false, false};
 bool quit = false;
-
-// Returns coords + width and height for a centered graphic
-transCoords* centreGraphic(int graphicWidth, int graphicHeight)
-{
-	transCoords* centeredTransCoords = (transCoords*)malloc(sizeof(transCoords));
-	centeredTransCoords->x = ((SCREEN_WIDTH / 2) - (graphicWidth / 2));
-	centeredTransCoords->y = ((SCREEN_HEIGHT / 2) - (graphicHeight / 2));
-	centeredTransCoords->w = graphicWidth;
-	centeredTransCoords->h = graphicHeight;
-	return centeredTransCoords;
-}
 
 // Creates entity
 entity *createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int* counter)
@@ -52,7 +39,7 @@ entity *createEntity(void *selectedThing, int selectedType, int posX, int posY, 
 // Creates a singular cell
 entity* createCell(int selectColumn, int selectRow, entity** list, int* counter, void*** addressList, int* addressCount, int gridID)
 {
-	SDL_Rect* newGraphics = createCellGraphics((selectRow) * 20, (selectColumn) * 20, 20, 20, addressList, addressCount);
+	SDL_Rect* newGraphics = createCellGraphics((selectColumn) * CELL_X_PADDING, (selectRow) * CELL_Y_PADDING, CELL_WIDTH, CELL_HEIGHT, addressList, addressCount);
 	saveAddress(addressList, addressCount, (void*)newGraphics);
 	cellData* newData = (cellData*)malloc(sizeof(cellData));
 	if (newData == NULL)
@@ -117,25 +104,26 @@ entity** initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int s
 }
 
 // Modifies an entity's coordinates relative to the coordinates of the camera
-void entityRender(entity *selectedEntity, entity *camera)
+void entityUpdate(entity *selectedEntity, entity *camera)
 {
-	// Determines based on keypress how to perform maths so as to move world correctly relative camera
-	if (cameraStates.up) {
+	// Determines based on keypress how to perform maths so as to move world correctly relative camera,
+	if (keyStates.up) {
 		selectedEntity->y = selectedEntity->initY + 10;
 		selectedEntity->x = selectedEntity->initX;
-	} else if (cameraStates.down) {
+	} else if (keyStates.down) {
 		selectedEntity->y = selectedEntity->initY - 10;
 		selectedEntity->x = selectedEntity->initX;
-	} else if (cameraStates.left) {
+	} else if (keyStates.left) {
 		selectedEntity->x = selectedEntity->initX + 10;
 		selectedEntity->y = selectedEntity->initY;
-	} else if (cameraStates.right) {
+	} else if (keyStates.right) {
 		selectedEntity->x = selectedEntity->initX - 10;
 		selectedEntity->y = selectedEntity->initY;
 	} else {
 		return;
 	}
 
+	// Makes sure to update internal values of cells so that the next round will work.
 	if (selectedEntity->form == T_CELL)
 	{
 		cellThing* thingPtr = (cellThing*)selectedEntity->thing;
@@ -148,52 +136,192 @@ void entityRender(entity *selectedEntity, entity *camera)
 	return;
 }
 
-// Updates camera position depending on movement keys, then calls entityRender
-void updateCamera(entity* camera, entity** list, entity*** cellGrid)
+// Updates game depending on movement keys using entityRender
+void updateGame(entity* camera, entity** list)
 {
-	if (cameraStates.up)
-	{
-		camera->y = (camera->y - 10);
-	} else if (cameraStates.down) {
-		camera->y = (camera->y + 10);
-	} else if (cameraStates.left) {
-		camera->x = (camera->x - 10);
-	} else if (cameraStates.right) {
-		camera->x = (camera->x + 10);
-	} else {
-		return;
-	}
 	int i = 0;
 	do
 	{
-		//(entity*) list;
 		if (list[i] == NULL)
 		{
 			break;
 		} else if (!(list[i]->form == T_CAMERA)) {
-			entityRender(list[i], camera);
+			entityUpdate(list[i], camera);
 		}
 		i = i + 1;
 	} while (list[i]->thing != NULL);
 	return;
 }
 
-// Updates cameraState whenever a SDL_KEYUP or SDL_KEYDOWN event is performed
-void updateCameraStates(bool keyState, int keyChoice)
+// Updates keyStates whenever a valid key is pressed (whether on keyboard or mouse).
+void updateKeyStates(bool keyState, int keyChoice)
 {
 	switch(keyChoice)
 	{
 		case SDLK_UP:
-			cameraStates.up = keyState;
+			keyStates.up = keyState;
 			break;
 		case SDLK_DOWN:
-			cameraStates.down = keyState;
+			keyStates.down = keyState;
 			break;
 		case SDLK_LEFT:
-			cameraStates.left = keyState;
+			keyStates.left = keyState;
 			break;
 		case SDLK_RIGHT:
-			cameraStates.right = keyState;
+			keyStates.right = keyState;
 			break;
+		case SDLK_SPACE:
+			if (keyStates.start != true)
+			{
+				keyStates.start = keyState;
+			}
 	}
+	return;
+}
+
+// Flips cell's life state if it is clicked by mouse.
+void updateCellStates(bool state, int posX, int posY, entity** grid)
+{
+	// Checks wheter mouse button is pressed, because only when the mouse is clicked do we need to check to see if a cell must be flipped.
+	if (state)
+	{
+		// Loops through cell grid and checks whether the cursor's coordinates are in the range of the cell
+		for (int i = 0; i < 1225; i++)
+		{
+			// if the mouse is between its origin coordinate and said coordinate multiplied by its width/height
+			if ((posX > grid[i]->x) && (posX < (grid[i]->x + grid[i]->w)))
+			{
+				if ((posY > grid[i]->y) && (posY < (grid[i]->y + grid[i]->h)))
+				{
+					cellThing* thingPtr = (cellThing*)grid[i]->thing;
+					cellData* dataPtr = thingPtr->data;
+					if (dataPtr->lifeState)
+					{
+						dataPtr->lifeState = false;
+					} else { dataPtr->lifeState = true; }
+				}
+			}
+		}	
+	}
+	return;
+}
+
+// Once started, will simulate Conway's game determined by the cells activated before start.
+void simulate(entity** grid)
+{
+	for (int i = 0; i < 1225; i++)
+	{
+		entity* cellPtr = grid[i];
+		cellThing* thingPtr = (cellThing*)grid[i]->thing;
+		cellData* dataPtr = thingPtr->data;
+
+		cellThing* northThingPtr;
+		cellThing* southThingPtr;
+		cellThing* westThingPtr;
+		cellThing* eastThingPtr;
+		cellThing* northEastThingPtr;
+		cellThing* southEastThingPtr;
+		cellThing* southWestThingPtr;
+		cellThing* northWestThingPtr;
+
+		cellData* northDataPtr;
+		cellData* southDataPtr;
+		cellData* westDataPtr;
+		cellData* eastDataPtr;
+		cellData* northEastDataPtr;
+		cellData* southEastDataPtr;
+		cellData* southWestDataPtr;
+		cellData* northWestDataPtr;
+
+		// Gets the neighbours of the currently selected cell
+		
+		for (int j = 0; j < 1225; j++)
+		{
+			cellThing* currentThingPtr = (cellThing*)grid[j]->thing;
+			cellData* currentDataPtr = thingPtr->data;
+			if 	(((currentDataPtr->row == (dataPtr->row - 1)) && (currentDataPtr->column == dataPtr->column)	// North
+				||((currentDataPtr->row == (dataPtr->row + 1)) && (currentDataPtr->column == dataPtr->column)) 	// South
+				||((currentDataPtr->column == (dataPtr->column - 1)) && (currentDataPtr->row == dataPtr->row))	// West
+				||((currentDataPtr->column == (dataPtr->column + 1)) && (currentDataPtr->row == dataPtr->row))	// East
+				||((currentDataPtr->row == (dataPtr->row - 1)) && (currentDataPtr->column == (dataPtr->column + 1))) // North-east
+				||((currentDataPtr->row == (dataPtr->row + 1)) && (currentDataPtr->column == (dataPtr->column + 1))) // South-east
+				||((currentDataPtr->row == (dataPtr->row - 1)) && (currentDataPtr->column == (dataPtr->column - 1))) // North-west
+				||((currentDataPtr->row == (dataPtr->row + 1)) && (currentDataPtr->column == (dataPtr->column - 1))) // South-west
+				) && (currentDataPtr->lifeState) )
+				{
+					dataPtr->aliveNeighbours++;
+				}
+		}
+
+		// if (grid[i - (LEVEL_WIDTH)])
+		// {
+		// 	northThingPtr = (cellThing*)grid[i - (LEVEL_WIDTH)]->thing;
+		// 	northDataPtr = northThingPtr->data;
+		// }
+		// if (grid[i + (LEVEL_WIDTH)])
+		// {
+		// 	southThingPtr = (cellThing*)grid[i + (LEVEL_WIDTH)]->thing;
+		// 	southDataPtr = southThingPtr->data;
+		// }
+		// if (grid[i - 1])
+		// {
+		// 	westThingPtr = (cellThing*)grid[i - 1]->thing;
+		// 	westDataPtr = westThingPtr->data;
+		// }
+		// if (grid[i + 1])
+		// {
+		// 	eastThingPtr = (cellThing*)grid[i + 1]->thing;
+		// 	eastDataPtr = eastThingPtr->data;
+		// }
+		// if (grid[i - (LEVEL_WIDTH + 1)])
+		// {
+		// 	northEastThingPtr = (cellThing*)grid[i - (LEVEL_WIDTH + 1)]->thing;
+		// 	northEastDataPtr = northEastThingPtr->data;
+		// }
+		// if (grid[i - (LEVEL_WIDTH - 1)])
+		// {
+		// 	northWestThingPtr = (cellThing*)grid[i - (LEVEL_WIDTH - 1)]->thing;
+		// 	northWestDataPtr = northWestThingPtr->data;
+		// }
+		// if (grid[i + (LEVEL_WIDTH + 1)])
+		// {
+		// 	southEastThingPtr = (cellThing*)grid[i + (LEVEL_WIDTH + 1)]->thing;
+		// 	southEastDataPtr = southEastThingPtr->data;
+		// }
+		// if (grid[i + (LEVEL_WIDTH - 1)])
+		// {
+		// 	southWestThingPtr = (cellThing*)grid[i + (LEVEL_WIDTH - 1)]->thing;
+		// 	southWestDataPtr = southWestThingPtr->data;
+		// }
+
+
+		// Determines how many of them are alive
+		// if (northDataPtr->lifeState) { 
+		// 	dataPtr->aliveNeighbours++; }
+		// if (southDataPtr->lifeState) { 
+		// 	dataPtr->aliveNeighbours++; }
+		// if (westDataPtr->lifeState) { 
+		// 	dataPtr->aliveNeighbours++; }
+		// if (eastDataPtr->lifeState) { 
+		// 	dataPtr->aliveNeighbours++; }
+		// if (northEastDataPtr->lifeState ) { dataPtr->aliveNeighbours++; }
+		// if (southEastDataPtr->lifeState ) { dataPtr->aliveNeighbours++; }
+		// if (northWestDataPtr->lifeState ) { dataPtr->aliveNeighbours++; }
+		// if (southWestDataPtr->lifeState ) { dataPtr->aliveNeighbours++; }
+
+		// Alter cell depending on conditions of the game
+		if (dataPtr->lifeState)
+		{
+			if (dataPtr->aliveNeighbours < 2 || dataPtr->aliveNeighbours > 3)
+			{
+				dataPtr->lifeState = false;
+			}
+		} else {
+			if (dataPtr->aliveNeighbours == 3)
+			{
+				dataPtr->lifeState = true;
+			}
+		}
+	}
+	return;
 }

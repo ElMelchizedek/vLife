@@ -20,12 +20,6 @@ const int LEVEL_HEIGHT = 350;
 void end()
 {
 	// Deallocate surface, destroy window, etc, & quit
-	if (bgTexture != NULL)
-	{
-		SDL_Texture *actualBGTexture = getTexture(bgTexture);
-		SDL_DestroyTexture(actualBGTexture);
-		actualBGTexture = NULL;
-	}
 	SDL_DestroyRenderer(renderer);
 	renderer = NULL;
 	SDL_DestroyWindow(window);
@@ -84,65 +78,72 @@ int main (int argc, char* argv[])
 		}
 		cellGrid = initialiseCellGrid(cellGrid, LEVEL_WIDTH, LEVEL_HEIGHT, mainEntityList, &mainEntityListCount, &addressList, &addressListCount);
 		saveAddress(&addressList, &addressListCount, (void*)&cellGrid);
-		// Load media
-		if (loadMedia(mainEntityList, &mainEntityListCount))
+		
+		SDL_Event e;
+
+		// Set viewport
+		SDL_Rect mainViewport;
+		mainViewport.x = 0;
+		mainViewport.y = 0;
+		mainViewport.w = SCREEN_WIDTH;
+		mainViewport.h = SCREEN_HEIGHT;
+		SDL_RenderSetViewport(renderer, &mainViewport);
+
+		// Set up camera
+		SDL_Rect cameraRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+		entity* camera = createEntity(&cameraRect, T_CAMERA, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, mainEntityList, &mainEntityListCount);
+
+		// Main loop
+		while (!quit)
 		{
-			errorHandle(E_LOAD_MEDIA);
-		}
-		else {
-			SDL_Event e;
-
-			// Set viewport
-			SDL_Rect mainViewport;
-			mainViewport.x = 0;
-			mainViewport.y = 0;
-			mainViewport.w = SCREEN_WIDTH;
-			mainViewport.h = SCREEN_HEIGHT;
-			SDL_RenderSetViewport(renderer, &mainViewport);
-
-			// Set up camera
-			SDL_Rect cameraRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
-			entity* camera = createEntity(&cameraRect, T_CAMERA, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, mainEntityList, &mainEntityListCount);
-
-			// Main loop
-			while (!quit)
+			// Event handler loop
+			while(SDL_PollEvent(&e) != 0)
 			{
-				// Event handler loop
-				while(SDL_PollEvent(&e) != 0)
+				if (e.type == SDL_QUIT)
 				{
-					if (e.type == SDL_QUIT)
+					for (int i = 0; i <= addressListCount; i++)
 					{
-						for (int i = 0; i <= addressListCount; i++)
-						{
-							free(addressList[i]);
-						}
-						quit = true;
-					} else if (e.type == SDL_KEYDOWN) {
-						updateCameraStates(true, e.key.keysym.sym);
-					} else if (e.type == SDL_KEYUP) {
-						updateCameraStates(false, e.key.keysym.sym);
-					} else if (e.type == SDL_MOUSEBUTTONDOWN) {
-						updateCameraStates(false, SDL_MOUSEBUTTONDOWN);
+						free(addressList[i]);
+					}
+					quit = true;
+				} else if (e.type == SDL_KEYDOWN) {
+					updateKeyStates(true, e.key.keysym.sym);
+				} else if (e.type == SDL_KEYUP) {
+					updateKeyStates(false, e.key.keysym.sym);
+				} else if (keyStates.start == false) {
+					if (e.type == SDL_MOUSEBUTTONDOWN) {
+						updateCellStates(true, e.button.x, e.button.y, cellGrid);
+					} else if (e.type == SDL_MOUSEBUTTONUP) {
+					updateCellStates(false, e.button.x, e.button.y, cellGrid);
 					}
 				}
-				updateCamera(camera, mainEntityList, &cellGrid);
-				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-				SDL_RenderClear(renderer);
-				SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-				
-				for (int i = 0; i < ((LEVEL_WIDTH / 10) * (LEVEL_HEIGHT / 10)); i++)
-				{
-					entity* cellPtr = cellGrid[i];
-					cellThing* thingPtr = (cellThing*)cellPtr->thing;
-					SDL_Rect* rectPtr = thingPtr->graphics;
+			}
+			updateGame(camera, mainEntityList);
+			SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+			SDL_RenderClear(renderer);
+			SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+
+			if (keyStates.start)
+			{
+				simulate(cellGrid);
+			}
+
+			for (int i = 0; i < ((LEVEL_WIDTH / 10) * (LEVEL_HEIGHT / 10)); i++)
+			{
+				entity* cellPtr = cellGrid[i];
+				cellThing* thingPtr = (cellThing*)cellPtr->thing;
+				SDL_Rect* rectPtr = thingPtr->graphics;
+				cellData* dataPtr = thingPtr->data;
+				if (dataPtr->lifeState) {
+					SDL_RenderFillRect(renderer, rectPtr);
+				} else {
 					SDL_RenderDrawRect(renderer, rectPtr); 
 				}
-				SDL_RenderPresent(renderer);
-				SDL_Delay(17);
 			}
+			SDL_RenderPresent(renderer);
+			SDL_Delay(17);
 		}
 	}
-
 	// Close programme
 	end();
 	return 0;

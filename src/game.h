@@ -20,30 +20,25 @@ typedef struct entity
     bool changed;
 } entity;
 
-// Moveable Texture: Joins an SDL_Texture and the corresponding SDL_Rect it will be mapped onto, for ease of use when being altered
-typedef struct mTexture 
-{
-    SDL_Texture *texture;
-    SDL_Rect destinationRect;
-} mTexture;
-
-// Transform + Coordinates: Used by centreGraphic() to give the transform values and coordinates to centre an entity, in a simple manner
-typedef struct transCoords
-{
-    int x;
-    int y;
-    int w;
-    int h;
-} transCoords;
-
-// Camera States: Modified upon SDL_KEYDOWN event whenever that occurs, and is passed every cycle to updateCamera to allow smooth simultaneous camera movement
-typedef struct cStates 
+// Key States: passed every cycle to updateGame, used for moving the camera.
+typedef struct kStates 
 {
     bool up;
     bool down;
     bool left;
     bool right;
-} cStates;
+    bool start;
+} kStates;
+
+// Mouse States: passed every cycle to updateGame, used for flipping cell states before simulation start.
+typedef struct mStates
+{
+    bool leftButton;
+    bool rightButton;
+    bool buttonDown;
+    int x;
+    int y;
+} mStates;
 
 // Cell Data: The data for the cell, which is paired with cellGraphics to form cellThing
 typedef struct cellData
@@ -52,10 +47,6 @@ typedef struct cellData
     int row;
     bool lifeState;
     int aliveNeighbours;
-    int neighbourUp;
-    int neighbourRight;
-    int neighbourDown;
-    int neighbourLeft;
 } cellData;
 
 // Combines together the data and the SDL_Rect to be put into an entity for a cell
@@ -75,18 +66,23 @@ typedef struct cellThing
 #define ZOOM_IN true
 #define ZOOM_OUT false
 
+// Cell macros
+#define CELL_WIDTH 20
+#define CELL_HEIGHT 20
+#define CELL_X_PADDING 20
+#define CELL_Y_PADDING 20
+
 // Variables for other functions
-extern struct entity* bgTexture;
-extern struct mTexture bgTextureM;
-extern struct cStates cameraStates;
+extern struct kStates keyStates;
 extern bool quit;
 
 // Functions
-transCoords* centreGraphic(int graphicWidth, int graphicHeight);
 entity* createEntity(void *selectedThing, int selectedType, int posX, int posY, int initW, int initH, entity** list, int* counter);
-void entityRender(entity *selectedEntity, entity *camera);
-void updateCamera(entity *camera, entity** list, entity*** cellGrid);
-void updateCameraStates(bool keyState, int keyChoice);
+void entityUpdate(entity *selectedEntity, entity *camera);
+void updateGame(entity *camera, entity** list);
+void updateKeyStates(bool keyState, int keyChoice);
 entity** initialiseCellGrid(entity** selectCellGrid, int selectLevelWidth, int selectLevelHeight, entity** list, int* counter, void*** addressList, int* addressCount);
+void updateCellStates(bool state, int posX, int posY, entity** cellGrid);
+void simulate(entity** grid);
 
 #endif // GAME_H
