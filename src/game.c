@@ -22,6 +22,7 @@ void calculate(entity** grid)
 		entity* cellPtr = grid[i];
 		cellThing* thingPtr = (cellThing*)grid[i]->thing;
 		cellData* dataPtr = thingPtr->data;
+		dataPtr->aliveNeighbours = 0;
 		for (int j = 0; j < 1225; j++)
 		{
 			cellThing* currentThingPtr = (cellThing*)grid[j]->thing;
