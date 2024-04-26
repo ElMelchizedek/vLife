@@ -19,38 +19,14 @@ int errorHandle(int error, ...)
 		case E_SDL_WINDOW_CREATE:
 			message = "Failed to create window\nSDL Error: %s\n";
 			break;
-		case E_SDL_LOAD_IMAGE:
-			message = "Failed to load image %s\nSDL Error: %s\n";
-			break;
 		case E_INIT:
 			message = "Failed to initialise programme\n";
-			break;
-		case E_LOAD_MEDIA:
-			message = "Failed to load media\n";
-			break;
-		case E_FILE_NOT_FOUND:
-			message = "Failed to find the specified file %s\n";
 			break;
 		case E_MEM:
 			message = "Failed to allocate memory for %s\n";
 			break;
-		case E_FILE_READ:
-			message = "Failed to read file %s\n";
-			break;
-		case E_SDL_OPTOMISE_BMP:
-			message = "SDL failed to optimise the specified Bitmap file %s\nSDL Error: %s\n";
-			break;
 		case E_SDL_RENDERER_CREATE:
 			message = "Failed to create renderer\nSDL Error: %s\n";
-			break;
-		case E_SDL_CREATE_TEXTURE_IMAGE:
-			message = "Failed to create texture from image %s\nSDL Error: %s\n";
-			break;
-		case E_UNSUPPORTED_ENTITY_THING_TYPE:
-			message = "Tried to access an entity that references a variable with an unsupported data form %d\n";
-			break;
-		case E_NULL:
-			message = "Specified referent %s returned NULL\n";
 			break;
 		case E_GRID_FLOAT:
 			message = "Calculated cell grid from level width %d, or height %d, is non-integer and will break cell initialisation\n";

@@ -4,19 +4,11 @@
 // Error macros
 #define E_SDL_INIT 0
 #define E_SDL_WINDOW_CREATE 1
-#define E_SDL_LOAD_IMAGE 2
-#define E_INIT 3
-#define E_LOAD_MEDIA 4
-#define E_FILE_NOT_FOUND 5
-#define E_MEM 6
-#define E_FILE_READ 7
-#define E_SDL_OPTOMISE_BMP 8
-#define E_SDL_RENDERER_CREATE 9
-#define E_SDL_CREATE_TEXTURE_IMAGE 10
-#define E_UNSUPPORTED_ENTITY_THING_TYPE 11
-#define E_NULL 12
-#define E_GRID_FLOAT 13
-#define E_REALLOC 14
+#define E_INIT 2
+#define E_MEM 3
+#define E_SDL_RENDERER_CREATE 4
+#define E_GRID_FLOAT 5
+#define E_REALLOC 6
 
 int errorHandle(int error, ...);
 

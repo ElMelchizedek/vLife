@@ -27,17 +27,22 @@ void end()
 	SDL_Quit();
 }
 
+// Save address of variable that has its memory dynamically allocated, so that it can be freed at quit
 void saveAddress(void*** addressList, int* addressCount, void* selectThing)
 {
 	*addressCount = *addressCount + 1;
 	*addressList = (void**)realloc(*addressList, *addressCount * sizeof(void*));
+	if (addressList == NULL)
+	{
+		errorHandle(E_REALLOC, "addressList");
+	}
 	(*addressList)[*addressCount - 1] = selectThing;
 	return;
 }
 
 int main (int argc, char* argv[])
 {
-	// Initialise 
+	// Initialise SDL
 	if (graphicInit())
 	{
 		errorHandle(E_INIT);
@@ -49,10 +54,11 @@ int main (int argc, char* argv[])
 		{
 			errorHandle(E_MEM, "addressList");
 		}
-		//addressList[0] = (void*)malloc(sizeof(void));
 		int addressListCount = 0;
+
 		// Declare entity list counter
 		int mainEntityListCount = 0;
+
 		// Allocate memory for entity list, then initialise its pointer elements
 		entity** mainEntityList = (entity**)malloc(10010 * sizeof(entity*));
 		if (mainEntityList == NULL)
@@ -78,20 +84,13 @@ int main (int argc, char* argv[])
 		}
 		cellGrid = initialiseCellGrid(cellGrid, LEVEL_WIDTH, LEVEL_HEIGHT, mainEntityList, &mainEntityListCount, &addressList, &addressListCount);
 		saveAddress(&addressList, &addressListCount, (void*)&cellGrid);
-		
-		SDL_Event e;
-
-		// Set viewport
-		SDL_Rect mainViewport;
-		mainViewport.x = 0;
-		mainViewport.y = 0;
-		mainViewport.w = SCREEN_WIDTH;
-		mainViewport.h = SCREEN_HEIGHT;
-		SDL_RenderSetViewport(renderer, &mainViewport);
 
 		// Set up camera
 		SDL_Rect cameraRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
 		entity* camera = createEntity(&cameraRect, T_CAMERA, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, mainEntityList, &mainEntityListCount);
+
+		// Create an event to be handled
+		SDL_Event e;
 
 		// Main loop
 		while (!quit)
@@ -99,6 +98,7 @@ int main (int argc, char* argv[])
 			// Event handler loop
 			while(SDL_PollEvent(&e) != 0)
 			{
+				// Free memory on quit
 				if (e.type == SDL_QUIT)
 				{
 					for (int i = 0; i <= addressListCount; i++)
@@ -106,6 +106,7 @@ int main (int argc, char* argv[])
 						free(addressList[i]);
 					}
 					quit = true;
+				//Handle key inputs
 				} else if (e.type == SDL_KEYDOWN) {
 					updateKeyStates(true, e.key.keysym.sym, cellGrid);
 				} else if (e.type == SDL_KEYUP) {
@@ -123,12 +124,14 @@ int main (int argc, char* argv[])
 			SDL_RenderClear(renderer);
 			SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 
+			// Simulate the game
 			if (keyStates.start)
 			{
 				calculate(cellGrid);
 				simulate(cellGrid);
 			}
 
+			// Loop through cells and display them
 			for (int i = 0; i < ((LEVEL_WIDTH / 10) * (LEVEL_HEIGHT / 10)); i++)
 			{
 				entity* cellPtr = cellGrid[i];
@@ -142,7 +145,6 @@ int main (int argc, char* argv[])
 				}
 			}
 			SDL_RenderPresent(renderer);
-			//keyStates.start = false;
 			SDL_Delay(17);
 		}
 	}
