@@ -17,13 +17,13 @@ bool quit = false;
 // Returns all cells to "not changed" so that they can be flipped by simulation in next tick, and recalculates how many alive neighbours each cell has.
 void calculate(entity** grid)
 {
-	for (int i = 0; i < 1225; i++)
+	for (int i = 0; i < 1600; i++)
 	{
 		entity* cellPtr = grid[i];
 		cellThing* thingPtr = (cellThing*)grid[i]->thing;
 		cellData* dataPtr = thingPtr->data;
 		dataPtr->aliveNeighbours = 0;
-		for (int j = 0; j < 1225; j++)
+		for (int j = 0; j < 1600; j++)
 		{
 			cellThing* currentThingPtr = (cellThing*)grid[j]->thing;
 			cellData* currentDataPtr = currentThingPtr->data;
@@ -46,7 +46,7 @@ void calculate(entity** grid)
 // Once started, will simulate Conway's game determined by the cells activated before start.
 void simulate(entity** grid)
 {
-	for (int i = 0; i < 1225; i++)
+	for (int i = 0; i < 1600; i++)
 	{
 		cellThing* thingPtr = (cellThing*)grid[i]->thing;
 		cellData* dataPtr = thingPtr->data;
@@ -240,7 +240,7 @@ void updateCellStates(bool state, int posX, int posY, entity** grid)
 	if (state)
 	{
 		// Loops through cell grid and checks whether the cursor's coordinates are in the range of the cell
-		for (int i = 0; i < 1225; i++)
+		for (int i = 0; i < 1600; i++)
 		{
 			// if the mouse is between its origin coordinate and said coordinate multiplied by its width/height
 			if ((posX > grid[i]->x) && (posX < (grid[i]->x + grid[i]->w)))

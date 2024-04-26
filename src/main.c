@@ -13,8 +13,8 @@
 // Constants
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
-const int LEVEL_WIDTH = 350;
-const int LEVEL_HEIGHT = 350; 
+const int LEVEL_WIDTH = 400;
+const int LEVEL_HEIGHT = 400; 
 
 // Quit programme
 void end()
