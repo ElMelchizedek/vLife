@@ -2,7 +2,7 @@
 ### Controls:
 
 
-WASD - Movement
+Arrow keys - Movement
 
 Mouse left click - Set or unset cell
 
